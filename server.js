@@ -9,7 +9,7 @@ var corsOptions = {
     "http://localhost:8081",
     "http://localhost:3000",
     "http://localhost:3001",
-    "http://uniadmin.co.s3-website-ap-southeast-1.amazonaws.com",
+    "https://master.d2g35yzd6w2061.amplifyapp.com",
     "https://uniadmin.co",
   ],
 };
