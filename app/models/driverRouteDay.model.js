@@ -1,0 +1,55 @@
+const DriverRouteDays = [
+    {
+        id:1,
+        idDriver:2,
+        idVehicle:1,
+        bedTime:null,
+        emergency:null,
+        typeDriver:2,
+        routeDate:"2022-08-27",
+        routeLine:1,
+        routeDayShift:"A",
+        dayNight:"day",
+        routeSite:1,
+        startTime:null,
+        endTime:null,
+        duration:null,
+        isFinish:false
+    },
+    {
+        id:2,
+        idDriver:4,
+        idVehicle:1,
+        bedTime:null,
+        emergency:null,
+        typeDriver:2,
+        routeDate:"2022-05-30",
+        routeLine:1,
+        routeDayShift:null,
+        dayNight:null,
+        routeSite:null,
+        startTime:null,
+        endTime:null,
+        duration:null,
+        isFinish:false
+    },
+    {
+        id:3,
+        idDriver:31,
+        idVehicle:1,
+        bedTime:null,
+        emergency:null,
+        typeDriver:3,
+        routeDate:"2022-08-27",
+        routeLine:null,
+        routeDayShift:null,
+        dayNight:null,
+        routeSite:null,
+        startTime:null,
+        endTime:null,
+        duration:null,
+        isFinish:false
+    }
+];
+
+module.exports = DriverRouteDays;

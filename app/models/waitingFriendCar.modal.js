@@ -1,0 +1,43 @@
+const WaitingFriendCar = [
+    {
+        id:1,
+        idRegister:1,
+        idPassenger:1,
+        name:"นาย สมชาย ปราศรัยดี",
+        idDriver:2,
+        type:"GoToWork",
+        fromPlace:"ดีคอนโดระยอง",
+        toPlace:"site 1",
+        date:new Date(),
+        time:new Date(),
+        status:"waiting",
+    },
+    {
+        id:2,
+        idRegister:1,
+        idPassenger:3,
+        name:"นาย สมหมาย ประกายศรี",
+        idDriver:2,
+        type:"GoToWork",
+        fromPlace:"ดีคอนโดระยอง",
+        toPlace:"site 1",
+        date:new Date(),
+        time:new Date(),
+        status:"waiting",
+    },
+    {
+        id:3,
+        idRegister:1,
+        idPassenger:5,
+        name:"นาย ชมเชย เอสต้า",
+        idDriver:2,
+        type:"GoToWork",
+        fromPlace:"ดีคอนโดระยอง",
+        toPlace:"site 1",
+        date:new Date().setDate(new Date().getDate()+1),
+        time:new Date(),
+        status:"waiting",
+    },
+];
+
+module.exports = WaitingFriendCar;

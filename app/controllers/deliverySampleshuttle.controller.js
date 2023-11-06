@@ -1,0 +1,317 @@
+const db = require("../models");
+const DeliverySampleshuttle = db.deliverySampleshyttle;
+const Users = db.users;
+const VehicleBrandsAndModels = db.vehicleBrandsAndModels;
+const VehicleTypes = db.vehicleTypes;
+const fs = require("fs");
+const path = require("path");
+
+const pool = require("../connection.js");
+
+exports.getDeliverySampleshuttleAll = async (req, res) => {
+  const rows = await pool.query(
+    "SELECT * FROM DeliverySampleShuttle WHERE idUser = ?",
+    [req.params.IdU]
+  );
+
+  return res.status(200).json(rows);
+};
+
+exports.getDeliverySampleshuttleByIdUser = async (req, res) => {
+  const rows = await pool.query(
+    "SELECT * FROM DeliverySampleShuttle WHERE idUser = ?",
+    [req.params.IdUser]
+  );
+  return res.status(200).json(rows);
+};
+exports.getDeliverySampleShuttleByNo = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM DeliverySampleShuttle  ORDER BY idDeliverySampleShuttle DESC LIMIT 1"
+    );
+    res.status(200).send(result);
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getDeliverySampleshuttleByIdDriver = async (req, res) => {
+  const rows = await pool.query(
+    "SELECT * FROM DeliverySampleShuttle WHERE idDriver = ? or idDriver is NULL",
+    [req.params.IdDriver]
+  );
+  // console.log(rows, "llll")
+  // if(typeof rows[1] === 'undefined'){
+  //     const rows = await pool.query("SELECT * FROM DeliverySampleShuttle WHERE idDriver IS NULL")
+  //     return res.status(200).json(rows);
+  // }
+  // else {
+  // let data = rows.find(row => row.status === "ส่งสินค้าเรียบร้อย")
+  // console.log(data, "hhhh")
+
+  // if(typeof data[1] !== 'undefined'){
+  //     return res.status(200).json(rows);
+  // }
+  // else{
+  //     const rows = await pool.query("SELECT * FROM DeliverySampleShuttle WHERE idDriver IS NULL")
+  //     return res.status(200).json(rows);
+  // }
+  // const rows = await pool.query("SELECT * FROM DeliverySampleShuttle");
+  return res.status(200).json(rows);
+
+  // }
+};
+
+exports.getDeliverySampleshuttleByIdBooking = async (req, res) => {
+  const [rows] = await pool.query(
+    "SELECT * FROM DeliverySampleShuttle WHERE idDeliverySampleShuttle = ?",
+    [req.params.IdBooking]
+  );
+  return res.status(200).json(rows);
+};
+
+exports.postDeliverySampleshuttleByStartDate = async (req, res) => {
+  const {
+    IdUser,
+    IdDriver,
+    NameSample,
+    NameGrade,
+    LotNumber,
+    NameSender,
+    PhoneSender,
+    date,
+    startTime,
+    fromPlace,
+    toPlace,
+    NameRecipient,
+    PhoneRecipient,
+    detail,
+    status,
+    no,
+  } = JSON.parse(req.body.mydata);
+  const files = req.files.attachment;
+  console.log(
+    IdUser,
+    IdDriver,
+    NameSample,
+    NameGrade,
+    LotNumber,
+    NameSender,
+    PhoneSender,
+    date,
+    startTime,
+    fromPlace,
+    toPlace,
+    NameRecipient,
+    PhoneRecipient,
+    detail,
+    status,
+    no
+  );
+  let lastedDeliverySampleShuttle = await pool.query(
+    "SELECT * FROM DeliverySampleShuttle  ORDER BY idDeliverySampleShuttle DESC LIMIT 1"
+  );
+  let lastedDeliverySampleShuttleId = 0;
+
+  if (lastedDeliverySampleShuttle.length == 0) {
+    lastedDeliverySampleShuttleId = lastedDeliverySampleShuttleId + 1;
+  } else {
+    lastedDeliverySampleShuttleId =
+      parseInt(lastedDeliverySampleShuttle[0].idDeliverySampleShuttle) + 1;
+  }
+  if (
+    fs.existsSync(
+      path.join(
+        __dirname,
+        `../image/deliverySampleShuttle/${lastedDeliverySampleShuttleId}`
+      )
+    )
+  ) {
+    fs.rmSync(
+      path.join(
+        __dirname,
+        `../image/deliverySampleShuttle/${lastedDeliverySampleShuttleId}`
+      ),
+      { recursive: true, force: true }
+    );
+  }
+  fs.mkdirSync(
+    path.join(
+      __dirname,
+      `../image/deliverySampleShuttle/${lastedDeliverySampleShuttleId}`
+    )
+  );
+
+  const attachment = [];
+
+  for (let i = 0; i < files.length; i++) {
+    let fileName;
+    if (i == 0) {
+      fileName =
+        "unknow" +
+        "." +
+        files[i].originalname.split(".")[
+          files[i].originalname.split(".").length - 1
+        ];
+    } else {
+      fileName =
+        "unknow" +
+        "(" +
+        i +
+        ")" +
+        "." +
+        files[i].originalname.split(".")[
+          files[i].originalname.split(".").length - 1
+        ];
+    }
+    let filePath = path.join(
+      __dirname,
+      `../image/deliverySampleShuttle/${lastedDeliverySampleShuttleId}/${fileName}`
+    );
+    fs.writeFileSync(filePath, files[i].buffer);
+    // bucketService.uploadFile(
+    //   `maintenance/${lastedDeliverySampleShuttleId}/${fileName}`,
+    //   files[i]
+    // );
+    attachment.push({
+      fileName: files[i].originalname,
+      path: `${lastedDeliverySampleShuttleId}/${fileName}`,
+    });
+  }
+  console.log(attachment);
+  await pool.query(`
+      INSERT INTO
+      DeliverySampleShuttle
+          (idUser,idDriver,no,nameSample, nameGrade, lotNumber, nameSender, phonesender, date, startTime, fromPlace, toPlace, nameRecipient, phoneRecipient, detail,status,path)
+      VALUES
+          (?,?,?,?, ?, ?, ?, ?,?, ?, ?, ?, ?, ?, ?, ?,?)`,
+      [IdUser, IdDriver,no, NameSample, NameGrade, LotNumber, NameSender, PhoneSender, date, startTime, fromPlace, toPlace, NameRecipient, PhoneRecipient, detail, status, JSON.stringify(attachment)]
+  )
+      .then((rows) => {
+          console.log(rows)
+          if (rows.insertId > 0) {
+              return res.status(200).send({
+                  type: "success", msg: "Input success",
+                  returnData: {
+                      IdUser: IdUser,
+                      IdDriver: IdDriver,
+                      NameSample: NameSample,
+                      PhoneSender: PhoneSender,
+                      LotNumber: LotNumber,
+                      NameSender: NameSender,
+                      date: date,
+                      startTime: startTime,
+                      fromPlace: fromPlace,
+                      toPlace: toPlace,
+                      NameRecipient: NameRecipient,
+                      PhoneRecipient: PhoneRecipient,
+                      detail: detail,
+                      status: status,
+                      no:no
+                  }
+              })
+          } else {
+              return res.status(200).send({ type: "false", msg: "Input false" })
+          }
+      }
+      )
+};
+
+exports.postUpdateDeliveryStatus = async (req, res) => {
+  const check = await pool.query(
+    "SELECT status FROM DeliverySampleShuttle WHERE idDeliverySampleShuttle = ?",
+    [req.body.newData.id]
+  );
+  // console.log("check", check[0].status)
+
+  if (check[0].status == "รอรับสินค้า") {
+    const rows = await pool.query(
+      "UPDATE DeliverySampleShuttle SET  status = ? WHERE idDeliverySampleShuttle = ? ",
+      ["รับสินค้าเรียบร้อย", req.body.newData.id]
+    );
+    const field = await pool.query(
+      "UPDATE DeliverySampleShuttle SET  idDriver = ? WHERE idDeliverySampleShuttle = ? ",
+      [req.body.newData.idDriver, req.body.newData.id]
+    );
+    return res.status(200).send({ type: "success", msg: "update success" });
+  } else if (check[0].status == "รับสินค้าเรียบร้อย") {
+    const rows = await pool.query(
+      "UPDATE DeliverySampleShuttle SET status = ? WHERE idDeliverySampleShuttle = ? ",
+      ["ส่งสินค้าเรียบร้อย", req.body.newData.id]
+    );
+    return res.status(200).send({ type: "success", msg: "update success" });
+  } else {
+    const rows = await pool.query(
+      "UPDATE DeliverySampleShuttle SET status = ? WHERE idDeliverySampleShuttle = ? ",
+      ["ได้รับสินค้าเรียบร้อย", req.body.newData.id]
+    );
+    return res.status(200).send({ type: "success", msg: "update success" });
+  }
+};
+
+exports.getDeliverySampleShuttleByFilter = async (req, res) =>{
+  try {
+
+    const {nameSample, fromSite, toSite, status, startdate, enddate} = req.body
+    // console.log(nameSample, fromSite, toSite, status, startdate, enddate)
+    let result
+    if(nameSample === ''){
+      result = await pool.query("SELECT * FROM DeliverySampleShuttle")
+    }else{
+      result = await pool.query(`SELECT  * FROM DeliverySampleShuttle WHERE
+      LOWER(DeliverySampleShuttle.nameSample) LIKE '%${nameSample.toLowerCase()}%'`)
+ 
+    }
+
+    if(fromSite === 'ทั้งหมด'){
+      result = result
+    }else{
+  
+      result = result.filter((value) => parseInt(value.fromPlace) === fromSite)
+
+    }
+
+    if(toSite === 'ทั้งหมด'){
+      result = result
+    }else{
+      result = result.filter((value) => parseInt(value.toPlace) === toSite)
+    }
+
+    if(status === "ทั้งหมด"){
+      result = result
+    }else if(status === "รอรับสินค้า"){
+      result = result.filter((value) => value.status === "รอรับสินค้า")
+    }else if(status === "รับสินค้าเรียบร้อย"){
+      result = result.filter((value) => value.status === "รับสินค้าเรียบร้อย")
+    }
+    else if(status === "ส่งสินค้าเรียบร้อย"){
+      result = result.filter((value) => value.status === "ส่งสินค้าเรียบร้อย")
+    }
+    else if(status === "ได้รับสินค้าเรียบร้อย"){
+      result = result.filter((value) => value.status === "ได้รับสินค้าเรียบร้อย")
+    }
+
+  if(startdate === null && enddate === null){
+    result = result
+  }else if(startdate != null && enddate === null){
+    result = result.filter((value) => (startdate < value.date.slice(0,10) ||startdate === value.date.slice(0,10)  ))
+  }else if(startdate != null && enddate != null){
+    console.log("in")
+    result = result.filter((value) => (startdate < value.date.slice(0,10) || startdate === value.date.slice(0,10)) )
+    result = result.filter((value) => (enddate > value.date.slice(0,10) || enddate === value.date.slice(0,10)) )
+  }else if(startdate === null && enddate != null){
+    console.log("in")
+    result = result.filter((value) => (enddate > value.date.slice(0,10) || enddate === value.date.slice(0,10)) )
+  }
+  if(result.length > 0){
+    return res.status(200).send({ type: "success", msg: "get data success",data:{result} });
+
+  }
+  else{
+    return res.status(200).send({ type: "no success", msg: "no data",data:{result} });
+  }
+
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
