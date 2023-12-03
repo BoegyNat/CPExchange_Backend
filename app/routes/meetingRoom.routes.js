@@ -44,7 +44,7 @@ module.exports = function (app) {
   app.get(
     "/api/all_new_meeting_room_booking",
     [authJwt.verifyToken],
-    MeetingRoomController.getAllMeetingRoomBooking
+    MeetingRoomController.getAllNewMeetingRoomBooking
   );
   app.get(
     "/api/all_new_meeting_room_booking_and_all_meeting_room",

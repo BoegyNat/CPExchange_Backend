@@ -263,7 +263,7 @@ exports.getMeetingRoomBookingByIdUser = async (req, res) => {
   }
 };
 
-exports.getAllMeetingRoomBooking = async (req, res) => {
+exports.getAllNewMeetingRoomBooking = async (req, res) => {
   try {
     const row = await pool.query("SELECT * FROM NewMeetingRoomBooking");
     if (row.length > 0) {
@@ -384,6 +384,29 @@ exports.getMeetingRoomBookingByFilter = async (req, res) => {
   }
 };
 exports.getAllMeetingRoomBookingByIdMeetingRoom = async (req, res) => {
+  try {
+    // console.log(new Date().toISOString().substring(0, 10))
+    
+    let row = await pool.query(
+      "SELECT * FROM NewMeetingRoomBooking WHERE idMeetingRoom = ? ",
+      [parseInt(req.params.id)]
+    );
+
+
+    row = row.filter((value)=> ((new Date(value.startDate)).toString().substring(0, 15) === (new Date()).toString().substring(0, 15) ))
+    // row = row.filter((value)=> console.log((new Date(value.startDate)).toString().substring(0, 15) === (new Date()).toString().substring(0, 15) ))
+
+    // console.log(new Date(row[0].startDate).toISOString().substring(0, 10))
+    if (row.length > 0) {
+      res.status(200).send(row);
+    } else {
+      res.status(200).send(row);
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+exports.getAllMeetingRoomBooking = async (req, res) => {
   try {
     // console.log(new Date().toISOString().substring(0, 10))
     
