@@ -140,6 +140,8 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
       "SELECT * FROM CrossAreaCarPoolBooking  ORDER BY idCrossAreaCarPoolBooking DESC LIMIT 1"
     );
     for (const data of Object.values(req.body.listPassenger)) {
+      console.log(data)
+
       const namePassenger = data.name;
       const companyPassenger = data.company;
       const phonePassenger = data.telephoneMobile;
@@ -147,7 +149,7 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
       const costCenter = data.costCenter;
       const costElement = data.costElement;
       const fromPlacePassenger = data.fromPlace;
-      const idUser = data.option.idUser;
+      const idUser = row[0].idUser;
       const toPlace = data.toPlace;
       const roundTime = data.roundTime;
       const purpose = data.purpose;
