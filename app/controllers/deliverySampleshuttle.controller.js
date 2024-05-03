@@ -25,6 +25,7 @@ const getUrlFormPath = async (rows, id) => {
     );
     rows[i].urlFiles = urlFiles;
   }
+  // console.log(id);
   return rows;
 };
 
@@ -95,6 +96,7 @@ exports.getDeliverySampleshuttleByIdBooking = async (req, res) => {
 };
 
 exports.postDeliverySampleshuttleByStartDate = async (req, res) => {
+  console.log(req.body);
   const {
     IdUser,
     IdDriver,
@@ -114,29 +116,10 @@ exports.postDeliverySampleshuttleByStartDate = async (req, res) => {
     no,
   } = JSON.parse(req.body.mydata);
   const files = req.files;
-  console.log(
-    IdUser,
-    IdDriver,
-    NameSample,
-    NameGrade,
-    LotNumber,
-    NameSender,
-    PhoneSender,
-    date,
-    startTime,
-    fromPlace,
-    toPlace,
-    NameRecipient,
-    PhoneRecipient,
-    detail,
-    status,
-    no
-  );
   let lastedDeliverySampleShuttle = await pool.query(
     "SELECT * FROM DeliverySampleShuttle  ORDER BY idDeliverySampleShuttle DESC LIMIT 1"
   );
   let lastedDeliverySampleShuttleId = 0;
-  console.log(lastedDeliverySampleShuttle[0].idDeliverySampleShuttle);
   if (lastedDeliverySampleShuttle.length == 0) {
     lastedDeliverySampleShuttleId = lastedDeliverySampleShuttleId + 1;
   } else {
@@ -205,7 +188,6 @@ exports.postDeliverySampleshuttleByStartDate = async (req, res) => {
       path: `${lastedDeliverySampleShuttleId}/${fileName}`,
     });
   }
-  console.log(attachment);
   await pool
     .query(
       `
@@ -235,7 +217,6 @@ exports.postDeliverySampleshuttleByStartDate = async (req, res) => {
       ]
     )
     .then((rows) => {
-      console.log(rows);
       if (rows.insertId > 0) {
         return res.status(200).send({
           type: "success",
