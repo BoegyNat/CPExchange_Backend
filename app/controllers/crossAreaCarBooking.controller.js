@@ -233,6 +233,7 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
     idVehicleBrandAndModel,
     purpose,
     idApproved,
+    totalPrice,
   } = req.body[0];
   const idUser = req.body[1];
   // console.log(idCrossAreaCarBooking, name, telephoneMobile, email, flight, fromPlace, toPlace, fromPlaceReturn,
@@ -244,9 +245,9 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
               INSERT INTO 
               CrossAreaCarBooking 
                   (name, telephoneMobile, email, flight, fromPlace, toPlace, fromPlaceReturn,
-                    toPlaceReturn, numberOfPassenger, idTypeCar, departureDate, startTime, endTime, purpose, idVehicleBrandAndModel, idUser, idApproved ) 
+                    toPlaceReturn, numberOfPassenger, idTypeCar, departureDate, startTime, endTime, purpose, idVehicleBrandAndModel, idUser, idApproved, totalPrice ) 
               VALUES 
-                  (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                  (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         name,
         telephoneMobile,
@@ -265,6 +266,7 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
         idVehicleBrandAndModel,
         idUser,
         idApproved,
+        totalPrice,
       ]
     );
 
@@ -390,14 +392,19 @@ exports.postApprovedCrossAreaCarBooking = async (req, res) => {
 };
 exports.getAllCrossAreaCarBookingsByFilter = async (req, res) => {
   try {
-   
     const { name, status, startdate, idUser } = req.body;
     let result;
     if (name === "") {
-      result = await pool.query("SELECT * FROM CrossAreaCarBooking WHERE idUser = ?",[idUser]);
+      result = await pool.query(
+        "SELECT * FROM CrossAreaCarBooking WHERE idUser = ?",
+        [idUser]
+      );
     } else {
-      result = await pool.query(`SELECT  * FROM CrossAreaCarBooking WHERE
-          LOWER(CrossAreaCarBooking.name) LIKE '%${name.toLowerCase()}%' AND idUser`,[idUser]);
+      result = await pool.query(
+        `SELECT  * FROM CrossAreaCarBooking WHERE
+          LOWER(CrossAreaCarBooking.name) LIKE '%${name.toLowerCase()}%' AND idUser`,
+        [idUser]
+      );
     }
     if (status === "ทั้งหมด") {
       result = result;
@@ -408,9 +415,9 @@ exports.getAllCrossAreaCarBookingsByFilter = async (req, res) => {
           booking.Approved != "Success" ||
           booking.statusManageCar != "Success"
       );
-    }else if(status === "Approved"){
-        result = []
-      }
+    } else if (status === "Approved") {
+      result = [];
+    }
 
     if (startdate === null) {
       result = result;
