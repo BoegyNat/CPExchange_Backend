@@ -281,7 +281,7 @@ exports.getDeliverySampleShuttleByFilter = async (req, res) => {
   try {
     const { nameSample, fromSite, toSite, status, startdate, enddate } =
       req.body;
-    // console.log(nameSample, fromSite, toSite, status, startdate, enddate)
+    // console.log(nameSample, fromSite, toSite, status, startdate, enddate);
     let result;
     if (nameSample === "") {
       result = await pool.query("SELECT * FROM DeliverySampleShuttle");
@@ -344,7 +344,7 @@ exports.getDeliverySampleShuttleByFilter = async (req, res) => {
           enddate === value.date.slice(0, 10)
       );
     }
-    const final_result = getUrlFormPath(result);
+    const final_result = await getUrlFormPath(result, 6);
     if (result.length > 0) {
       return res.status(200).send({
         type: "success",
