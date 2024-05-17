@@ -9,6 +9,26 @@ const bucketService = require("../service/bucket");
 
 const pool = require("../connection.js");
 
+setInterval(async () => {
+  const rows = await pool.query("SELECT * FROM DeliverySampleShuttle");
+  const today = new Date().getTime();
+  for (let i = 0; i < rows.length; i++) {
+    const date = new Date(rows[i].date).getTime() + 2592000000;
+    if (date < today && rows[i].isExp === 0) {
+      const deleteFiles = JSON.parse(rows[i].path);
+      for (let j = 0; j < deleteFiles.length; j++) {
+        bucketService.deleteFile(
+          `deliverySampleShuttle/${deleteFiles[j].path}`
+        );
+      }
+      const result = await pool.query(
+        "UPDATE DeliverySampleShuttle SET isExp = ? WHERE idDeliverySampleShuttle = ?",
+        [1, rows[i].idDeliverySampleShuttle]
+      );
+    }
+  }
+}, 86400000); //ลบไฟล์เก่าทุกๆ 24 ชั่วโมง
+
 const getUrlFormPath = async (rows, id) => {
   for (let i = 0; i < rows.length; i++) {
     let urlFiles = [];

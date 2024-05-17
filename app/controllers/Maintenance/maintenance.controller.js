@@ -14,9 +14,27 @@ const bucketService = require("../../service/bucket");
 const pool = require("../../connection.js");
 const { da } = require("date-fns/locale");
 
+setInterval(async () => {
+  const rows = await pool.query("SELECT * FROM Maintenances");
+  const today = new Date().getTime();
+  for (let i = 0; i < rows.length; i++) {
+    const date = new Date(rows[i].createdAt).getTime() + 2592000000;
+    if (date < today && rows[i].isExp === 0) {
+      const deleteFiles = JSON.parse(rows[i].attachment);
+      for (let j = 0; j < deleteFiles.length; j++) {
+        bucketService.deleteFile(`maintenance/${deleteFiles[j].path}`);
+      }
+      const result = await pool.query(
+        "UPDATE Maintenances SET isExp = ? WHERE idMaintenances = ?",
+        [1, rows[i].idMaintenances]
+      );
+    }
+  }
+}, 86400000); //ลบไฟล์เก่าทุกๆ 24 ชั่วโมง
+
 //add new maintenance request
 exports.addNewMaintenanceRequest = async (req, res) => {
-  console.log(req)
+  console.log(req);
   try {
     const {
       idUser,
@@ -68,19 +86,19 @@ exports.addNewMaintenanceRequest = async (req, res) => {
     } else {
       lastedMaintenanceId = parseInt(lastedMaintenance[0].idMaintenances) + 1;
     }
-    if (
-      fs.existsSync(
-        path.join(__dirname, `../../file/maintenance/${lastedMaintenanceId}`)
-      )
-    ) {
-      fs.rmSync(
-        path.join(__dirname, `../../file/maintenance/${lastedMaintenanceId}`),
-        { recursive: true, force: true }
-      );
-    }
-    fs.mkdirSync(
-      path.join(__dirname, `../../file/maintenance/${lastedMaintenanceId}`)
-    );
+    // if (
+    //   fs.existsSync(
+    //     path.join(__dirname, `../../file/maintenance/${lastedMaintenanceId}`)
+    //   )
+    // ) {
+    //   fs.rmSync(
+    //     path.join(__dirname, `../../file/maintenance/${lastedMaintenanceId}`),
+    //     { recursive: true, force: true }
+    //   );
+    // }
+    // fs.mkdirSync(
+    //   path.join(__dirname, `../../file/maintenance/${lastedMaintenanceId}`)
+    // );
 
     const attachment = [];
 
@@ -104,11 +122,11 @@ exports.addNewMaintenanceRequest = async (req, res) => {
             files[i].originalname.split(".").length - 1
           ];
       }
-      let filePath = path.join(
-        __dirname,
-        `../../file/maintenance/${lastedMaintenanceId}/${fileName}`
-      );
-      fs.writeFileSync(filePath, files[i].buffer);
+      // let filePath = path.join(
+      //   __dirname,
+      //   `../../file/maintenance/${lastedMaintenanceId}/${fileName}`
+      // );
+      // fs.writeFileSync(filePath, files[i].buffer);
       bucketService.uploadFile(
         `maintenance/${lastedMaintenanceId}/${fileName}`,
         files[i]
@@ -361,17 +379,19 @@ exports.getMaintenanceDesc = async (req, res) => {
           (t) => parseInt(t.idMaintenanceTechnicians) === parseInt(tId)
         )
       );
-      technician = await Promise.all(technician.map(async (t, index)=>{
-        if(JSON.parse(t.image).length > 0){
-          let datapath = await bucketService.getSignedUrl(`technician/${JSON.parse(t.image)[0].path}`)
-          return {
-            ...t,
-            fileUrl : datapath
+      technician = await Promise.all(
+        technician.map(async (t, index) => {
+          if (JSON.parse(t.image).length > 0) {
+            let datapath = await bucketService.getSignedUrl(
+              `technician/${JSON.parse(t.image)[0].path}`
+            );
+            return {
+              ...t,
+              fileUrl: datapath,
+            };
           }
-        }
-        
-      }))
-
+        })
+      );
     }
     const deliveries = await pool.query(
       "SELECT * FROM MaintenanceDeliveries WHERE idMaintenances = ?",
@@ -679,21 +699,24 @@ exports.getAllTechnicians = async (req, res) => {
         //.sort((a, b) => new Date(a.startDate) - new Date(b.startDate)),
       };
     });
-    if(result){
-      const data = result[0].image
-      console.log(data)
-      result = await Promise.all(result.map(async (t, index)=>{
-        if(JSON.parse(t.image).length > 0){
-          let datapath = await bucketService.getSignedUrl(`technician/${JSON.parse(t.image)[0].path}`)
-          return {
-            ...t,
-            fileUrl : datapath
+    if (result) {
+      const data = result[0].image;
+      console.log(data);
+      result = await Promise.all(
+        result.map(async (t, index) => {
+          if (JSON.parse(t.image).length > 0) {
+            let datapath = await bucketService.getSignedUrl(
+              `technician/${JSON.parse(t.image)[0].path}`
+            );
+            return {
+              ...t,
+              fileUrl: datapath,
+            };
           }
-        }
-        
-      }))
+        })
+      );
     }
-    
+
     console.log(result);
 
     return res.status(200).send({
@@ -791,7 +814,10 @@ exports.newTechnician = async (req, res) => {
       )
     );
     fs.writeFileSync(avatarPath, file.buffer);
-    bucketService.uploadFile(`technician/${lastedTechnicianId}/${avatarName}`,file)
+    bucketService.uploadFile(
+      `technician/${lastedTechnicianId}/${avatarName}`,
+      file
+    );
     const attachment = [];
     attachment.push({
       // fileName: file.originalname,
