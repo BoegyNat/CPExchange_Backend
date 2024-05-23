@@ -1,8 +1,8 @@
 const { authJwt } = require("../middleware");
 const vehicleController = require("../controllers/vehicle.controller");
 
-module.exports = function(app) {
-  app.use(function(req, res, next) {
+module.exports = function (app) {
+  app.use(function (req, res, next) {
     res.header(
       "Access-Control-Allow-Headers",
       "x-access-token, Origin, Content-Type, Accept"
@@ -32,6 +32,17 @@ module.exports = function(app) {
     "/api/post_new_vehicle/",
     [authJwt.verifyToken],
     vehicleController.postNewVehicle
-  )
+  );
 
+  app.post(
+    "/api/post_edit_vehicle/",
+    [authJwt.verifyToken],
+    vehicleController.postEditVehicle
+  );
+
+  app.post(
+    "/api/post_delete_vehicle/",
+    [authJwt.verifyToken],
+    vehicleController.postDeleteVehicle
+  );
 };
