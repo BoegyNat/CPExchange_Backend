@@ -4,28 +4,51 @@ const Employees = db.employees;
 const pool = require("../connection.js");
 
 exports.allEmployees = async (req, res) => {
-
-    try {
-      const row = await pool.query("SELECT * FROM Employee");
-
-      res.status(200).send(row);
-    } catch (error) {
-      res.status(500).send({ message: error.message });
-    }
+  try {
+    const row = await pool.query(
+      // "SELECT * FROM Employee ;"
+      "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees BETWEEN 102700 AND 102750;"
+    );
+    console.log(row);
+    res.status(200).send(row);
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
 };
 
 exports.getEmployeesByIdApproved = async (req, res) => {
-  try{
+  try {
     // console.log("getEmployeesByIdApproved", req.params.id);
-    const data = await pool.query("SELECT * FROM Employee WHERE idEmployee = ?", [req.params.id])
-    if(data.length > 0){
-
+    const data = await pool.query(
+      "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition  WHERE e.idEmployees = ?",
+      [req.params.id]
+    );
+    if (data.length > 0) {
       res.status(200).send(data);
-    }else{
-      console.log("null")
+    } else {
+      console.log("null");
     }
-
-  }catch (error) {
+  } catch (error) {
     res.status(500).send({ message: error.message });
   }
-}
+};
+
+exports.getEmployeesByPage = async (req, res) => {
+  try {
+    console.log(req.params.page);
+    const page = parseInt(req.params.page);
+    const Start = (page - 1) * 100 + 1;
+    const End = page * 100;
+    const data = await pool.query(
+      "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees BETWEEN ? AND ?;",
+      [Start, End]
+    );
+    if (data.length > 0) {
+      res.status(200).send(data);
+    } else {
+      console.log("null");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
