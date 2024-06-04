@@ -17,7 +17,13 @@ module.exports = function (app) {
   );
 
   app.get(
-    "/api/employess_by_idapproved/:id",
+    "/api/employees_by_id/:id",
+    [authJwt.verifyToken],
+    employeeController.getEmployeesById
+  );
+
+  app.get(
+    "/api/employees_by_idapproved/:id",
     [authJwt.verifyToken],
     employeeController.getEmployeesByIdApproved
   );

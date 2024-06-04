@@ -337,11 +337,11 @@ exports.postManageCarCrossAreaCarBooking = async (req, res) => {
     // CrossAreaCarBookings.find(booking => booking.id == req.body.id).plate_No = manageCar.plate_No;
     // CrossAreaCarBookings.find(booking => booking.id == req.body.id).nameDriver = manageCar.nameDriver;
     // CrossAreaCarBookings.find(booking => booking.id == req.body.id).note = manageCar.note;
-    // if(rows){
-    //     res.status(200).send(rows);
-    // }else{
-    //     res.status(404).send("Not Found Booking");
-    // }
+    if (rows) {
+      res.status(200).send(rows);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
