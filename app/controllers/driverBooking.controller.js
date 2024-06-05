@@ -6,8 +6,10 @@ exports.postNewDriverBooking = async (req, res) => {
     namePlaceTo,
     startDate,
     startTime,
+    endDate,
     endTime,
     note,
+    detailJourney,
     idUser,
     option,
   } = req.body[0];
@@ -21,15 +23,17 @@ exports.postNewDriverBooking = async (req, res) => {
       `
           INSERT INTO 
           DriverBooking 
-              (namePlaceFrom, namePlaceTo, startDate, startTime, endTime, note, idUser, nameUser, addOption) 
+              (namePlaceFrom, namePlaceTo, startDate, startTime, endDate, endTime, detailJourney, note, idUser, nameUser, addOption) 
           VALUES 
-            (?,?,?,?,?,?,?,?,?)`,
+            (?,?,?,?,?,?,?,?,?,?,?)`,
       [
         namePlaceFrom,
         namePlaceTo,
         startDate,
         startTime,
+        endDate,
         endTime,
+        detailJourney,
         note,
         idUser,
         userData[0].fNameThai,
@@ -154,87 +158,115 @@ exports.getDriverBookingByIdUserForRating = async (req, res) => {
 
 exports.getDriverBookingByFilter = async (req, res) => {
   try {
-    const {name, from, to, status, startdate, enddate} = req.body
+    const { name, from, to, status, startdate, enddate } = req.body;
     // console.log(name, from, to, status, startdate, enddate)
 
-    let result
-    if(name === ''){
-      result = await pool.query("SELECT * FROM DriverBooking")
-    }else{
+    let result;
+    if (name === "") {
+      result = await pool.query("SELECT * FROM DriverBooking");
+    } else {
       result = await pool.query(`SELECT  * FROM DriverBooking WHERE
-      LOWER(DriverBooking.nameUser) LIKE '%${name.toLowerCase()}%'`)
+      LOWER(DriverBooking.nameUser) LIKE '%${name.toLowerCase()}%'`);
     }
 
-    if(from === ''){
-      result = result
-    }else{
+    if (from === "") {
+      result = result;
+    } else {
       result = await pool.query(`SELECT  * FROM DriverBooking WHERE
-      LOWER(DriverBooking.namePlaceFrom) LIKE '%${from.toLowerCase()}%'`)
- 
+      LOWER(DriverBooking.namePlaceFrom) LIKE '%${from.toLowerCase()}%'`);
     }
 
-    if(to === ''){
-      result = result
-    }else{
+    if (to === "") {
+      result = result;
+    } else {
       result = await pool.query(`SELECT  * FROM DriverBooking WHERE
-      LOWER(DriverBooking.namePlaceTo) LIKE '%${to.toLowerCase()}%'`)
- 
+      LOWER(DriverBooking.namePlaceTo) LIKE '%${to.toLowerCase()}%'`);
     }
 
-    if(status === "ทั้งหมด"){
-      result = result
-    }else if(status === "สำเร็จ"){
-      result = result.filter((value) => value.statusManageCar === "Success")
-    }else if(status === "รอจัดคนขับรถ"){
-      result = result.filter((value) => value.statusManageCar != "Success")
+    if (status === "ทั้งหมด") {
+      result = result;
+    } else if (status === "สำเร็จ") {
+      result = result.filter((value) => value.statusManageCar === "Success");
+    } else if (status === "รอจัดคนขับรถ") {
+      result = result.filter((value) => value.statusManageCar != "Success");
     }
 
-    if(startdate === null && enddate === null){
-      result = result
-    }else if(startdate != null && enddate === null){
-      result = result.filter((value) => (startdate < value.startDate.slice(0,10) ||startdate === value.startDate.slice(0,10)  ))
-    }else if(startdate != null && enddate != null){
-      result = result.filter((value) => (startdate < value.startDate.slice(0,10) || startdate === value.startDate.slice(0,10)) )
-      result = result.filter((value) => (enddate > value.startDate.slice(0,10) || enddate === value.startDate.slice(0,10)) )
-    }else if(startdate === null && enddate != null){
-      result = result.filter((value) => (enddate > value.startDate.slice(0,10) || enddate === value.startDate.slice(0,10)) )
+    if (startdate === null && enddate === null) {
+      result = result;
+    } else if (startdate != null && enddate === null) {
+      result = result.filter(
+        (value) =>
+          startdate < value.startDate.slice(0, 10) ||
+          startdate === value.startDate.slice(0, 10)
+      );
+    } else if (startdate != null && enddate != null) {
+      result = result.filter(
+        (value) =>
+          startdate < value.startDate.slice(0, 10) ||
+          startdate === value.startDate.slice(0, 10)
+      );
+      result = result.filter(
+        (value) =>
+          enddate > value.startDate.slice(0, 10) ||
+          enddate === value.startDate.slice(0, 10)
+      );
+    } else if (startdate === null && enddate != null) {
+      result = result.filter(
+        (value) =>
+          enddate > value.startDate.slice(0, 10) ||
+          enddate === value.startDate.slice(0, 10)
+      );
     }
-    console.log(result)
-    if(result.length > 0){
-      return res.status(200).send({ type: "success", msg: "get data success",data:{result} });
-  
+    console.log(result);
+    if (result.length > 0) {
+      return res
+        .status(200)
+        .send({ type: "success", msg: "get data success", data: { result } });
+    } else {
+      return res
+        .status(200)
+        .send({ type: "no success", msg: "no data", data: { result } });
     }
-    else{
-      return res.status(200).send({ type: "no success", msg: "no data",data:{result} });
-    }
-  
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
 };
 exports.getDriverBookingByFilterByIdUser = async (req, res) => {
   try {
-    console.log(req.body)
-    const { name, status, startdate, idUser } = req.body;    // console.log(name, from, to, status, startdate, enddate)
+    console.log(req.body);
+    const { name, status, startdate, idUser } = req.body; // console.log(name, from, to, status, startdate, enddate)
 
-    let result
-    if(name === ''){
-      result = await pool.query("SELECT * FROM DriverBooking WHERE idUser =  ?",[idUser])
-    }else{
-      result = await pool.query(`SELECT  * FROM DriverBooking WHERE
-      LOWER(DriverBooking.nameUser) LIKE '%${name.toLowerCase()}%' AND idUser = ?`,[idUser])
+    let result;
+    if (name === "") {
+      result = await pool.query(
+        "SELECT * FROM DriverBooking WHERE idUser =  ?",
+        [idUser]
+      );
+    } else {
+      result = await pool.query(
+        `SELECT  * FROM DriverBooking WHERE
+      LOWER(DriverBooking.nameUser) LIKE '%${name.toLowerCase()}%' AND idUser = ?`,
+        [idUser]
+      );
     }
 
-   
-    if(status === "ทั้งหมด"){
-      result = result
-    }else if(status === "Waiting"){
-      result = result.filter((value) => (value.statusManageCar != "Success" && value.statusDelivery != "Success"))
-    }else if(status === "Approved"){
-      result = result.filter((value) => (value.statusManageCar === "Success" && value.statusDelivery != "Success"))
+    if (status === "ทั้งหมด") {
+      result = result;
+    } else if (status === "Waiting") {
+      result = result.filter(
+        (value) =>
+          value.statusManageCar != "Success" &&
+          value.statusDelivery != "Success"
+      );
+    } else if (status === "Approved") {
+      result = result.filter(
+        (value) =>
+          value.statusManageCar === "Success" &&
+          value.statusDelivery != "Success"
+      );
     }
 
-    console.log(result)
+    console.log(result);
     if (startdate === null) {
       result = result;
     } else if (startdate != null) {
@@ -242,15 +274,12 @@ exports.getDriverBookingByFilterByIdUser = async (req, res) => {
         (value) => startdate === value.startDate.slice(0, 10)
       );
     }
-    console.log(result)
-    if(result){
+    console.log(result);
+    if (result) {
       return res.status(200).send(result);
-  
-    }
-    else{
+    } else {
       return res.status(200).send(result);
     }
-  
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
