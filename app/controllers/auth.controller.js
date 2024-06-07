@@ -2,70 +2,108 @@
 const config = require("../config/auth.config");
 // const Users = db.users;
 
-const pool = require("../connection.js")
+const pool = require("../connection.js");
 
 var jwt = require("jsonwebtoken");
 
 exports.signin = async (req, res) => {
+  const { username, password } = req.body;
 
-  const { username, password } = req.body
-
-
-  await pool.query(`
-    SELECT 
-      username , password , idUser , authorities , image 
+  await pool
+    .query(
+      `
+SELECT 
+      username , password , idEmployees , e.idRole  , imageName ,personalID ,r.roleName 
     FROM 
-      Users 
+      UniHR.Employees e 
+      LEFT JOIN UniHR.Role r ON r.idRole = e.idRole 
     WHERE 
-      username = ? 
+      username = ?
     LIMIT 
-      1 
-      `, [username])
-      // .then((result) => {
-      //   console.log(result)
-      // })
-    .then((rows) => {
+      1;
       
+      `,
+      [username]
+    )
+    // .then((result) => {
+    //   console.log(result)
+    // })
+    .then((rows) => {
       if (rows.length > 0) {
+        if (rows[0].password == null) {
+          if (password == rows[0].personalID) {
+            var token = jwt.sign(
+              { idUser: rows[0].idEmployees },
+              config.secret,
+              {
+                expiresIn: 86400, // 24 hours
+              }
+            );
 
+            if (token) {
+              console.log(rows[0]);
+              return res.status(200).send({
+                type: "success",
+                msg: "Login success",
+                returnData: {
+                  idUser: rows[0].idEmployees,
+                  username: rows[0].username,
+                  roles:
+                    rows[0].roleName === "ROLE_ADMIN" ||
+                    rows[0].roleName === "ROLE_MANAGER"
+                      ? rows[0].roleName + ",ROLE_USER"
+                      : rows[0].roleName,
+                  image: rows[0].imageName,
+                  accessToken: token,
+                },
+              });
+            }
+          } else {
+            return res
+              .status(200)
+              .send({ type: "password_invalid", msg: "Password Not Correct" });
+          }
+        }
         if (rows[0].password === password) {
           //password ถูก
 
-          var token = jwt.sign({ idUser: rows[0].idUser }, config.secret, {
+          var token = jwt.sign({ idUser: rows[0].idEmployees }, config.secret, {
             expiresIn: 86400, // 24 hours
           });
 
           if (token) {
-            console.log(rows[0])
+            console.log(rows[0]);
             return res.status(200).send({
-              type: "success", msg: "Login success",
+              type: "success",
+              msg: "Login success",
               returnData: {
-                idUser: rows[0].idUser,
+                idUser: rows[0].idEmployees,
                 username: rows[0].username,
-                roles: rows[0].authorities,
-                image: rows[0].image,
+                roles:
+                  rows[0].roleName === "ROLE_ADMIN" ||
+                  rows[0].roleName === "ROLE_MANAGER"
+                    ? rows[0].roleName + ",ROLE_USER"
+                    : rows[0].roleName,
+                image: rows[0].imageName,
                 accessToken: token,
-              }
-
-            })
+              },
+            });
           }
-
-
         } else {
           //password ไม่ถูก
-          return res.status(200).send({ type: "password_invalid", msg: "Password Not Correct" })
-
+          return res
+            .status(200)
+            .send({ type: "password_invalid", msg: "Password Not Correct" });
         }
-
       } else {
-        return res.status(200).send({ type: "not_found", msg: "User Not Found" })
+        return res
+          .status(200)
+          .send({ type: "not_found", msg: "User Not Found" });
       }
-    })
-
+    });
 
   // try {
   //   let result = Users.find((user) => user.username === req.body.username);
-
 
   //   if (result) {
   //     var passwordIsValid = req.body.password == result.password;
