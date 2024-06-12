@@ -33,4 +33,10 @@ module.exports = function (app) {
     [authJwt.verifyToken],
     employeeController.getEmployeesByPage
   );
+
+  app.get(
+    "/api/employees_by_company/:idCompany",
+    [authJwt.verifyToken],
+    employeeController.getEmployeesByCompany
+  );
 };

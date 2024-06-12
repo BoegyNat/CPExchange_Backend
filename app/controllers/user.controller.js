@@ -5,9 +5,10 @@ const pool = require("../connection.js");
 
 exports.userProfile = async (req, res) => {
   try {
-    let result = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
-      req.params.id,
-    ]);
+    let result = await pool.query(
+      "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+      [req.params.id]
+    );
     if (result) {
       res.status(200).send(result[0]);
     } else {
@@ -88,7 +89,9 @@ exports.allManager = async (req, res) => {
 
 exports.allUser = async (req, res) => {
   try {
-    const row = await pool.query("SELECT * FROM Users");
+    const row = await pool.query(
+      "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL ;"
+    );
     return res.status(200).send(row);
   } catch (error) {
     res.status(500).send({ message: error.message });
