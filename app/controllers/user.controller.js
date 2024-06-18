@@ -19,9 +19,24 @@ exports.userProfile = async (req, res) => {
   }
 };
 
+exports.driverProfile = async (req, res) => {
+  try {
+    let result = await pool.query(
+      "SELECT * FROM Users LEFT JOIN Driver ON Users.idUser = Driver.idUser WHERE Users.idUser = ? AND Users.authorities = 'ROLE_USER,ROLE_DRIVER'",
+      [req.params.id]
+    );
+    if (result) {
+      res.status(200).send(result[0]);
+    } else {
+      return res.status(404).send({ message: "User Not found." });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
 exports.updateLocationUser = async (req, res) => {
   try {
-    // console.log(""req.body.Lng)
     const rows = await pool.query(
       "UPDATE Users SET  lat = ? WHERE idUser = ? ",
       [req.body.Lat, req.body.idUser]
@@ -30,30 +45,19 @@ exports.updateLocationUser = async (req, res) => {
       req.body.Lng,
       req.body.idUser,
     ]);
-
-    // console.log("ff", rows)
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
 };
 
 exports.allDrivers = async (req, res) => {
-  const ScanRoleDriver = (user) => {
-    let resultScan = false;
-    user.authorities.split(",").map((role) => {
-      if (role === "ROLE_DRIVER") {
-        resultScan = true;
-      }
-    });
-    return resultScan;
-  };
-
   try {
-    const row = await pool.query("SELECT * FROM Users");
+    const row = await pool.query(
+      "SELECT * FROM Users LEFT JOIN Driver ON Users.idUser = Driver.idUser WHERE Users.authorities = 'ROLE_USER,ROLE_DRIVER' AND Users.status = 1 AND Driver.IsActive = 0"
+    );
 
-    let result = row.filter((user) => ScanRoleDriver(user));
-    if (result) {
-      res.status(200).send(result);
+    if (row) {
+      res.status(200).send(row);
     } else {
       return res.status(404).send({ message: "User Not found." });
     }

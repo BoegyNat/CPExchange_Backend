@@ -30,7 +30,6 @@ exports.getCrossAreaCarPoolBookingById = (req, res) => {
 
 exports.getCrossAreaCarPoolBookingByIdUser = async (req, res) => {
   try {
-    // console.log("myListOfRequest/cross_area_car_pool_booking", req.params)
     const row = await pool.query(
       "SELECT * FROM CrossAreaCarPoolBooking  WHERE idUser = ?",
       [req.params.idUser]
@@ -38,7 +37,7 @@ exports.getCrossAreaCarPoolBookingByIdUser = async (req, res) => {
     const rows = await pool.query(
       "SELECT * FROM CrossAreaCarPoolBookingPassenger"
     );
-    // console.log("myListOfRequest/cross_area_car_pool_booking", row)
+
     // let result = CrossAreaCarPoolBookings.filter(booking => {
     //     if(booking.idUser == req.params.idUser){
     //         return true;
@@ -109,9 +108,6 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
     numberOfPassengerReturn,
   } = req.body;
 
-  // console.log(idCrossAreaCarPoolBooking,idUser, name, telephoneMobile, email, flight, fromPlace, toPlace, fromPlaceReturn,
-  //     toPlaceReturn, numberOfPassenger, departureDate, numberOfPassengerReturn)
-
   try {
     const rows = await pool.query(
       `
@@ -121,8 +117,9 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
             toPlace, numberOfPassenger, departureDate, fromPlaceReturn,
               toPlaceReturn, numberOfPassengerReturn) 
         VALUES 
-          (1,?,?,?,?,?,?,?,?,?,?,?)`,
+          (?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
+        idUser,
         name,
         telephoneMobile,
         email,
@@ -140,16 +137,15 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
       "SELECT * FROM CrossAreaCarPoolBooking  ORDER BY idCrossAreaCarPoolBooking DESC LIMIT 1"
     );
     for (const data of Object.values(req.body.listPassenger)) {
-      console.log(data)
-
       const namePassenger = data.name;
+      const departmentPassenger = data.option.departmentName;
       const companyPassenger = data.company;
       const phonePassenger = data.telephoneMobile;
       const emailPassenger = data.email;
       const costCenter = data.costCenter;
       const costElement = data.costElement;
       const fromPlacePassenger = data.fromPlace;
-      const idUser = row[0].idUser;
+      const idUser = data.option.idEmployees;
       const toPlace = data.toPlace;
       const roundTime = data.roundTime;
       const purpose = data.purpose;
@@ -158,23 +154,21 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
       const toPlaceReturn = data.toPlaceReturn;
       const endTimeReturn = data.endTime;
       const idCrossAreaCarPool = row[0].idCrossAreaCarPoolBooking;
-      // console.log("IdUsers", data.option.idUser)
-      // console.log("kkk",  namePassenger, companyPassenger, phonePassenger, emailPassenger, costCenter,
-      // costElement, fromPlacePassenger, idCrossAreaCarPool, idUser, toPlace, roundTime, purpose, noteDeparture, fromPlaceReturn, toPlaceReturn,endTimeReturn)
       const field = await pool.query(
         `
                   INSERT INTO 
                   CrossAreaCarPoolBookingPassenger 
-                      (idCrossAreaCarPoolBooking, idUser, name,telephoneMobile, email, company, costCenter,
+                      (idCrossAreaCarPoolBooking, idUser, name,telephoneMobile, email, department, company, costCenter,
                         costElement, fromPlace, toPlace, roundTime, purpose, noteDeparture, fromPlaceReturn, toPlaceReturn, endTimeReturn) 
                   VALUES 
-                      (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                      (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           idCrossAreaCarPool,
           idUser,
           namePassenger,
           phonePassenger,
           emailPassenger,
+          departmentPassenger,
           companyPassenger,
           costCenter,
           costElement,
@@ -192,7 +186,7 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
         "SELECT * FROM CrossAreaCarPoolBookingPassenger  ORDER BY idCrossAreaCarPoolBookingPassenger DESC LIMIT 1"
       );
       const resdataUser = await pool.query(
-        "SELECT * FROM Users  where idUser = ?",
+        "SELECT latAddress as lat, lngAddress as lng FROM UniHR.Employees  where idEmployees = ?",
         [idUser]
       );
 
@@ -205,7 +199,7 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
                     (?,?,?,?,?,?,?,null,null,null,null,null,null,null,null)`,
         [
           resdataid[0].idCrossAreaCarPoolBookingPassenger,
-          new Date(departureDate),
+          new Date(),
           idUser,
           new Date(departureDate),
           idCrossAreaCarPool,
@@ -221,7 +215,6 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
 
 exports.postApprovedlCrossAreaCarPoolBooking = async (req, res) => {
   try {
-
     const rows = await pool.query(
       "UPDATE CrossAreaCarPoolBooking SET  statusApproved = ?  , Approved= ? WHERE idCrossAreaCarPoolBooking = ? ",
       [req.body.status, req.body.status, req.body.idBooking]

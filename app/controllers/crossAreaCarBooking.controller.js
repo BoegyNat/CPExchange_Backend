@@ -1,9 +1,9 @@
 const db = require("../models");
-const CrossAreaCarBookings = db.crossAreaCarBookings;
-const CrossAreaCarBookingPassengers = db.crossAreaCarBookingPassengers;
-const VehicleBrandsAndModels = db.vehicleBrandsAndModels;
-const VehicleTypes = db.vehicleTypes;
-const Users = db.users;
+// const CrossAreaCarBookings = db.crossAreaCarBookings;
+// const CrossAreaCarBookingPassengers = db.crossAreaCarBookingPassengers;
+// const VehicleBrandsAndModels = db.vehicleBrandsAndModels;
+// const VehicleTypes = db.vehicleTypes;
+// const Users = db.users;
 
 const pool = require("../connection.js");
 
@@ -16,22 +16,34 @@ exports.getAllCrossAreaCarBookings = async (req, res) => {
   }
 };
 
-exports.getCrossAreaCarBookingById = (req, res) => {
+exports.getCrossAreaCarBookingById = async (req, res) => {
   try {
-    let result = CrossAreaCarBookings.find(
-      (booking) => booking.id == req.params.id
+    let result = await pool.query(
+      "SELECT * FROM CrossAreaCarBooking WHERE idCrossAreaCarBooking = ?",
+      [req.params.id]
     );
+
     if (result) {
-      result.user = Users.find((user) => user.id == result.idUser);
-      result.vehicleBrandsAndModels = VehicleBrandsAndModels.find(
-        (vehicle) => vehicle.id == result.idVehicleBrandAndModel
+      result.user = await pool.query(
+        "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+        [result.idUser]
       );
-      result.vehicleTypes = VehicleTypes.find(
-        (vehicle) => vehicle.id == result.idTypeCar
+
+      result.vehicleBrandsAndModels = await pool.query(
+        "SELECT * FROM VehicleBrandsAndModels WHERE idVehicleBrandsAndModels = ?",
+        [result.idVehicleBrandAndModel]
       );
-      result.passengers = CrossAreaCarBookingPassengers.filter(
-        (booking) => booking.idCrossAreaCarBooking == result.id
+
+      result.vehicleTypes = await pool.query(
+        "SELECT * FROM VehicleTypes WHERE idVehicleTypes = ?",
+        [result.idTypeCar]
       );
+
+      result.passengers = await pool.query(
+        "SELECT * FROM CrossAreaCarBookingPassengers WHERE idCrossAreaCarBooking = ?",
+        [result.id]
+      );
+
       res.status(200).send(result);
     } else {
       res.status(404).send("Not Found Booking");
@@ -43,22 +55,30 @@ exports.getCrossAreaCarBookingById = (req, res) => {
 
 exports.getCrossAreaCarBookingByIdUser = async (req, res) => {
   try {
-    const row = await pool.query(
+    let row = await pool.query(
       "SELECT * FROM CrossAreaCarBooking WHERE idUser = ?",
       [req.params.idUser]
     );
-    let result = row.filter((booking) => booking.idUser == req.params.idUser);
-    if (result.length > 0) {
-      result.map((booking) => {
-        booking.user = Users.find((user) => user.idUser == booking.idUser);
-        booking.vehicleBrandsAndModels = VehicleBrandsAndModels.find(
-          (vehicle) => vehicle.id == booking.idVehicleBrandAndModel
+    if (row.length > 0) {
+      row.map(async (booking) => {
+        booking.user = await pool.query(
+          "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+          [booking.idUser]
         );
-        booking.vehicleTypes = VehicleTypes.find(
-          (vehicle) => vehicle.id == booking.idTypeCar
+
+        booking.vehicleBrandsAndModels = await pool.query(
+          "SELECT * FROM VehicleBrandsAndModels WHERE idVehicleBrandsAndModels = ?",
+          [booking.idVehicleBrandAndModel]
         );
-        booking.passengers = CrossAreaCarBookingPassengers.filter(
-          (booking) => booking.idCrossAreaCarBooking == booking.id
+
+        booking.vehicleTypes = await pool.query(
+          "SELECT * FROM VehicleTypes WHERE idVehicleTypes = ?",
+          [booking.idTypeCar]
+        );
+
+        booking.passengers = await pool.query(
+          "SELECT * FROM CrossAreaCarBookingPassengers WHERE idCrossAreaCarBooking = ?",
+          [booking.id]
         );
       });
       res.status(200).send(result);
@@ -93,23 +113,30 @@ exports.getCrossAreaCarBookingByIdUserForRating = async (req, res) => {
   }
 };
 
-exports.getCrossAreaCarBookingByIdApprovedUserForManager = (req, res) => {
+exports.getCrossAreaCarBookingByIdApprovedUserForManager = async (req, res) => {
   try {
-    let result = CrossAreaCarBookings.filter(
-      (booking) =>
-        booking.idApprovedUser == req.params.idApprovedUser &&
-        booking.statusApproved == false
+    let result = await pool.query(
+      "SELECT * FROM CrossAreaCarBooking WHERE idApprovedUser = ? AND statusApproved <> 'Success'",
+      [req.params.idApprovedUser]
     );
-    result.map((booking) => {
-      booking.user = Users.find((user) => user.id == booking.idUser);
-      let type = VehicleTypes.find(
-        (vehitype) => vehitype.id == booking.idTypeCar
+
+    result.map(async (booking) => {
+      booking.user = await pool.query(
+        "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+        [booking.idUser]
       );
+
+      let type = await pool.query(
+        "SELECT * FROM VehicleTypes WHERE idVehicleTypes = ?",
+        [booking.idTypeCar]
+      );
+
       booking.vehicleTypes = type;
       booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
       booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
-      let brandAndModel = VehicleBrandsAndModels.find(
-        (vehibrand) => vehibrand.id == booking.idVehicleBrandAndModel
+      let brandAndModel = await pool.query(
+        "SELECT * FROM VehicleBrandsAndModels WHERE idVehicleBrandsAndModels = ?",
+        [booking.idVehicleBrandAndModel]
       );
       booking.vehicleBrandsAndModels = brandAndModel;
       booking.brand = brandAndModel.brand;
@@ -132,29 +159,25 @@ exports.getCrossAreaCarBookingByIdApprovedUserForManager = (req, res) => {
 
 exports.getCrossAreaCarBookingByStartDate = async (req, res) => {
   try {
-    // console.log("getCrossAreaCarBookingByStartDate", req.body)
-    const data = await pool.query("SELECT * FROM CrossAreaCarBooking");
-    // console.log("getCrossAreaCarBookingByStartDate", data)
-    let result = data.filter((booking) => {
-      let dateBookingModel = new Date(booking.departureDate).setHours(
-        0,
-        0,
-        0,
-        0
-      );
+    const data = await pool.query(
+      "SELECT * FROM CrossAreaCarBooking WHERE departureDate >= ?",
+      [req.body.startDate]
+    );
 
-      let dateBody = new Date(req.body.startDate).setHours(0, 0, 0, 0);
+    const vehicleTypes = await pool.query("SELECT * FROM VehicleTypes");
+    const vehicleBrandsAndModels = await pool.query(
+      "SELECT * FROM VehicleBrandsAndModels"
+    );
 
-      return dateBookingModel > dateBody;
-    });
-    result.map((booking) => {
-      let type = VehicleTypes.find(
-        (vehitype) => vehitype.id == booking.idTypeCar
+    data.map((booking) => {
+      let type = vehicleTypes.find(
+        (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
       );
       booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
       booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
-      let brandAndModel = VehicleBrandsAndModels.find(
-        (vehibrand) => vehibrand.id == booking.idVehicleBrandAndModel
+      let brandAndModel = vehicleBrandsAndModels.find(
+        (vehibrand) =>
+          vehibrand.idVehicleBrandsAndModels == booking.idVehicleBrandAndModel
       );
       booking.brand = brandAndModel.brand;
       booking.model = brandAndModel.model;
@@ -164,8 +187,8 @@ exports.getCrossAreaCarBookingByStartDate = async (req, res) => {
       booking.breakABS = brandAndModel.breakABS;
       booking.imagepath = brandAndModel.imagepath;
     });
-    if (result.length > 0) {
-      res.status(200).send(result);
+    if (data.length > 0) {
+      res.status(200).send(data);
     } else {
       res.status(404).send("Not Found Booking");
     }
@@ -174,27 +197,27 @@ exports.getCrossAreaCarBookingByStartDate = async (req, res) => {
   }
 };
 
-exports.getCrossAreaCarBookingByStartDateAndEndDate = (req, res) => {
+exports.getCrossAreaCarBookingByStartDateAndEndDate = async (req, res) => {
   try {
-    let result = CrossAreaCarBookings.filter((booking) => {
-      let dateBookingModel = new Date(booking.departureDate).setHours(
-        0,
-        0,
-        0,
-        0
-      );
-      let startDateBody = new Date(req.body.startDate).setHours(0, 0, 0, 0);
-      let endDateBody = new Date(req.body.endDate).setHours(0, 0, 0, 0);
-      return dateBookingModel > startDateBody && dateBookingModel < endDateBody;
-    });
+    let result = await pool.query(
+      "SELECT * FROM CrossAreaCarBooking WHERE departureDate BETWEEN ? AND ?",
+      [req.body.startDate, req.body.endDate]
+    );
+
+    const vehicleTypes = await pool.query("SELECT * FROM VehicleTypes");
+    const vehicleBrandsAndModels = await pool.query(
+      "SELECT * FROM VehicleBrandsAndModels"
+    );
+
     result.map((booking) => {
-      let type = VehicleTypes.find(
-        (vehitype) => vehitype.id == booking.idTypeCar
+      let type = vehicleTypes.find(
+        (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
       );
       booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
       booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
-      let brandAndModel = VehicleBrandsAndModels.find(
-        (vehibrand) => vehibrand.id == booking.idVehicleBrandAndModel
+      let brandAndModel = vehicleBrandsAndModels.find(
+        (vehibrand) =>
+          vehibrand.idVehicleBrandsAndModels == booking.idVehicleBrandAndModel
       );
       booking.brand = brandAndModel.brand;
       booking.model = brandAndModel.model;
@@ -236,8 +259,6 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
     totalPrice,
   } = req.body[0];
   const idUser = req.body[1];
-  // console.log(idCrossAreaCarBooking, name, telephoneMobile, email, flight, fromPlace, toPlace, fromPlaceReturn,
-  //     toPlaceReturn, numberOfPassenger, idTypeCar, departureDate, startTime, endTime, idVehicleBrandAndModel, detail, idApproved)
 
   try {
     const rows = await pool.query(
@@ -283,7 +304,6 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
       const costElement = data.costElement;
       const fromPlacePassenger = data.fromPlace;
       const idCrossAreaCar = row[0].idCrossAreaCarBooking;
-      // console.log(namePassenger, companyPassenger, phonePassenger, emailPassenger, costCenter, costElement, fromPlacePassenger, idCrossAreaCar)
       const field = await pool.query(
         `
               INSERT INTO 
@@ -324,8 +344,8 @@ exports.postManageCarCrossAreaCarBooking = async (req, res) => {
         req.body.plate_No,
         "Success",
         idDriver,
-        false,
-        false,
+        null,
+        null,
         req.body.id,
       ]
     );
@@ -353,7 +373,7 @@ exports.deleteCarCrossAreaCarBooking = async (req, res) => {
       "DELETE FROM CrossAreaCarBooking WHERE idCrossAreaCarBooking = ?",
       [req.body.idCrossAreaCarBooking]
     );
-    // console.log("Delete Route", req.body.idCrossAreaCarBooking)
+
     if (rows) {
       res.status(200).send(rows);
     } else {
@@ -365,7 +385,6 @@ exports.deleteCarCrossAreaCarBooking = async (req, res) => {
 };
 exports.postApprovedCrossAreaCarBooking = async (req, res) => {
   try {
-    console.log("postApprovedCrossAreaCarBooking", req.body);
     // const row = await pool.query("SELECT * FROM Users WHERE idUser = ?", [req.body.nameDriver])
     // const idDriver = req.body.nameDriver
     const rows = await pool.query(

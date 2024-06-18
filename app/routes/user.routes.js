@@ -16,6 +16,12 @@ module.exports = function (app) {
     userController.userProfile
   );
 
+  app.get(
+    "/api/driver/profile/:id",
+    [authJwt.verifyToken],
+    userController.driverProfile
+  );
+
   app.get("/api/users", [authJwt.verifyToken], userController.allUser);
 
   app.get(
