@@ -172,7 +172,7 @@ exports.postEditIdDriverRoute = async (req, res) => {
         req.body.routeLine,
       ]
     );
-
+    res.status(200).send(rows);
     // else{
     //     res.status(404).send({ message: "Not Found" });
     // }
@@ -187,6 +187,7 @@ exports.deleteRouteCrossPools = async (req, res) => {
       "DELETE FROM routeCrossAreaCarPools WHERE routeLine = ?",
       [req.body.route[0].routeLine]
     );
+    res.status(200).send(row);
   } catch (error) {
     res.status(500).send({ message: error.message });
   }

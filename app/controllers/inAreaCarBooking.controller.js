@@ -5,7 +5,6 @@ const Users = db.users;
 const pool = require("../connection.js");
 
 function convertStringDatetime(time) {
-  console.log(time);
   const [hours, minutes] = time.split(":");
   const datetime = new Date();
   datetime.setHours(parseInt(hours, 10));
@@ -94,27 +93,20 @@ exports.getInAreaCarBookingByIdApprovedUserForManager = async (req, res) => {
 
 exports.getInAreaCarBookingByStartDate = async (req, res) => {
   try {
-    const row = await pool.query("SELECT * FROM inAreaCarBooking");
-    console.log("GET", row);
-    let result = row.filter((booking) => {
-      let dateBookingModel = new Date(booking.departureDate).setHours(
-        0,
-        0,
-        0,
-        0
-      );
-      let dateBody = new Date(req.body.startDate).setHours(0, 0, 0, 0);
-      return dateBookingModel > dateBody;
-    });
-    result.map((booking) => {
-      let type = VehicleTypes.find(
-        (vehitype) => vehitype.id == booking.idTypeCar
+    const row = await pool.query(
+      "SELECT * FROM inAreaCarBooking WHERE departureDate > ?",
+      [req.body.startDate]
+    );
+    const vehicleType = await pool.query("SELECT * FROM VehicleTypes");
+    row.map((booking) => {
+      let type = vehicleType.find(
+        (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
       );
       booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
       booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
     });
-    if (result.length > 0) {
-      res.status(200).send(result);
+    if (row.length > 0) {
+      res.status(200).send(row);
     } else {
       res.status(404).send("Not Found Booking");
     }
@@ -123,28 +115,34 @@ exports.getInAreaCarBookingByStartDate = async (req, res) => {
   }
 };
 
-exports.getInAreaCarBookingByStartDateAndEndDate = (req, res) => {
+exports.getInAreaCarBookingByStartDateAndEndDate = async (req, res) => {
   try {
-    let result = InAreaCarBookings.filter((booking) => {
-      let dateBookingModel = new Date(booking.departureDate).setHours(
-        0,
-        0,
-        0,
-        0
-      );
-      let startDateBody = new Date(req.body.startDate).setHours(0, 0, 0, 0);
-      let endDateBody = new Date(req.body.endDate).setHours(0, 0, 0, 0);
-      return dateBookingModel > startDateBody && dateBookingModel < endDateBody;
-    });
-    result.map((booking) => {
-      let type = VehicleTypes.find(
-        (vehitype) => vehitype.id == booking.idTypeCar
+    const row = await pool.query(
+      "SELECT * FROM inAreaCarBooking WHERE departureDate BETWEEN ? AND ?",
+      [req.body.startDate, req.body.endDate]
+    );
+    // let result = InAreaCarBookings.filter((booking) => {
+    //   let dateBookingModel = new Date(booking.departureDate).setHours(
+    //     0,
+    //     0,
+    //     0,
+    //     0
+    //   );
+    //   let startDateBody = new Date(req.body.startDate).setHours(0, 0, 0, 0);
+    //   let endDateBody = new Date(req.body.endDate).setHours(0, 0, 0, 0);
+    //   return dateBookingModel > startDateBody && dateBookingModel < endDateBody;
+    // });
+    const vehicleType = await pool.query("SELECT * FROM VehicleTypes");
+
+    row.map((booking) => {
+      let type = vehicleType.find(
+        (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
       );
       booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
       booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
     });
-    if (result.length > 0) {
-      res.status(200).send(result);
+    if (row.length > 0) {
+      res.status(200).send(row);
     } else {
       res.status(404).send("Not Found Booking");
     }
@@ -154,7 +152,6 @@ exports.getInAreaCarBookingByStartDateAndEndDate = (req, res) => {
 };
 exports.postNewInAreaCarBooking = async (req, res) => {
   try {
-    console.log(req.body);
     const {
       name,
       telephoneMobile,
@@ -180,38 +177,11 @@ exports.postNewInAreaCarBooking = async (req, res) => {
       companyApproved,
       idUser,
     } = req.body;
-    console.log(
-      name,
-      telephoneMobile,
-      email,
-      flight,
-      fromPlace,
-      toPlace,
-      numberOfPassenger,
-      departureDate,
-      startTime,
-      endTime,
-      idTypeCar,
-      idVehicleBrandAndModel,
-      gaSite,
-      purpose,
-      note,
-      company,
-      costCenter,
-      costElement,
-      idApproved,
-      nameApproved,
-      departmentApproved,
-      companyApproved,
-      idUser
-    );
+
     const init_status = "in progress";
     const convertStartTime = convertStringDatetime(startTime);
     const convertEndTime = convertStringDatetime(endTime);
-    // console.log("log data", idUser, name, telephoneMobile, email, flight, fromPlace, toPlace, numberOfPassenger, departureDate, startTime, endTime, idTypeCar, idVehicleBrandAndModel, gaSite, purpose, note, company, costCenter, costElement,
-    // idApproved, nameApproved, departmentApproved, companyApproved)
-    // console.log("postNewInAreaCarBooking", req.body[0])
-    console.log("Query...");
+
     const rows = await pool
       .query(
         `
@@ -256,7 +226,6 @@ exports.postNewInAreaCarBooking = async (req, res) => {
       )
       .then((rows) => {
         if (rows.insertId > 0) {
-          console.log("add in are booking finish");
           return res.status(200).send({
             type: "success",
             msg: "Input success",
@@ -296,27 +265,33 @@ exports.postNewInAreaCarBooking = async (req, res) => {
 };
 exports.postManageCarInAreaCarBooking = async (req, res) => {
   try {
-    // console.log("postManageCarInAreaCarBooking", req.body)
+    console.log(req.body);
+
     const row = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
       req.body[0].nameDriver,
     ]);
     const idDriver = req.body[0].nameDriver;
     const rows = await pool.query(
-      "UPDATE inAreaCarBooking SET  note= ?, statusManageCar = ?, plate_No= ?, nameDriver = ?, idDriver = ? WHERE idinAreaCarBooking = ? ",
+      "UPDATE inAreaCarBooking SET  idTypeCar= ?, idVehicleBrandAndModel= ?, gaSite= ?,note= ?, statusManageCar = ?, idVehicle = ?, model = ? , plate_No= ?, nameDriver = ?, idDriver = ? WHERE idinAreaCarBooking = ? ",
       [
+        req.body[0].idTypeCar,
+        req.body[0].idVehicleBrandAndModel,
+        req.body[0].gaSite,
         req.body[0].note,
-        "Succes",
+        "Success",
+        req.body[0].idVehicle,
+        req.body[0].model,
         req.body[0].plate_No,
         row[0].fNameThai,
         idDriver,
         req.body[0].id,
       ]
     );
-    // if(rows){
-    //     res.status(200).send(rows);
-    // }else{
-    //     res.status(404).send("Not Found Booking");
-    // }
+    if (rows) {
+      res.status(200).send(rows);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
@@ -341,7 +316,6 @@ exports.deleteCarInAreaCarBooking = async (req, res) => {
 
 exports.postApprovedInAreaCarBooking = async (req, res) => {
   try {
-    console.log("postApprovedInAreaCarBooking", req.body);
     // const row = await pool.query("SELECT * FROM Users WHERE idUser = ?", [req.body.nameDriver])
     // const idDriver = req.body.nameDriver
     const rows = await pool.query(

@@ -336,8 +336,10 @@ exports.postManageCarCrossAreaCarBooking = async (req, res) => {
     ]);
     const idDriver = req.body.nameDriver;
     const rows = await pool.query(
-      "UPDATE CrossAreaCarBooking SET  model = ?, nameDriver= ?, note= ?, plate_No= ?, statusManageCar = ?, idDriver = ?, statusApproved = ?, Approved = ? WHERE idCrossAreaCarBooking = ? ",
+      "UPDATE CrossAreaCarBooking SET idVehicleBrandAndModel = ?, idVehicle= ?, model = ?, nameDriver= ?, note= ?, plate_No= ?, statusManageCar = ?, idDriver = ?, statusApproved = ?, Approved = ? WHERE idCrossAreaCarBooking = ? ",
       [
+        req.body.idVehicleBrandAndModel,
+        req.body.idVehicle,
         req.body.model,
         row[0].fNameThai,
         req.body.note,

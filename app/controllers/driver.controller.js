@@ -108,6 +108,24 @@ exports.postNewDriver = async (req, res) => {
       ]
     );
 
+    const driverLocation = await pool.query(
+      `
+      INSERT INTO
+      LocationDriver
+          (idDriver,
+          latDriver,
+          LngDriver
+        )
+      VALUES
+        (?, ?, ?)
+      `,
+      [
+        lastIdUser[0].idUser + 1,
+        Math.floor(Math.random() * 5) + 13.1254535885,
+        Math.floor(Math.random() * 10) + 100.1254535885,
+      ]
+    );
+
     if (result && newUser) {
       res.status(200).send({
         username: `driver${lastIdUser[0].idUser + 1}`,
@@ -208,7 +226,7 @@ exports.deleteDrivers = async (req, res) => {
 
       await pool.query(`UPDATE Users SET status = ? WHERE idUser = ?`, [
         0,
-        user[0].idUser,
+        deleteDrivers[i],
       ]);
       rows.push(row);
     }

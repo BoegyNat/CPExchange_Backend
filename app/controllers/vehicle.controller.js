@@ -9,7 +9,7 @@ const VehicleBrandsAndModels = db.vehicleBrandsAndModels;
 exports.allVehicles = async (req, res) => {
   try {
     const row = await pool.query(
-      "SELECT * FROM Vehicle JOIN VehicleTypes ON Vehicle.idVehicleType = VehicleTypes.idVehicleTypes"
+      "SELECT * FROM Vehicle JOIN VehicleBrandsAndModels ON Vehicle.idVehicleBrandAndModel = VehicleBrandsAndModels.idVehicleBrandsAndModels JOIN VehicleTypes ON Vehicle.idVehicleType = VehicleTypes.idVehicleTypes"
     );
     // console.log(row);
     // row.map( vehi => {
