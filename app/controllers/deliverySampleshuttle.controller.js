@@ -543,7 +543,7 @@ exports.postEditDeliverySampleShuttle = async (req, res) => {
         ]
       )
       .then((rows) => {
-        if (rows.insertId > 0) {
+        if (rows) {
           return res.status(200).send({
             type: "success",
             msg: "Input success",

@@ -225,7 +225,7 @@ exports.postNewInAreaCarBooking = async (req, res) => {
         ]
       )
       .then((rows) => {
-        if (rows.insertId > 0) {
+        if (rows) {
           return res.status(200).send({
             type: "success",
             msg: "Input success",
@@ -256,7 +256,7 @@ exports.postNewInAreaCarBooking = async (req, res) => {
             },
           });
         } else {
-          return res.status(200).send({ type: "false", msg: "Input false" });
+          return res.status(400).send({ type: "false", msg: "Input false" });
         }
       });
   } catch (error) {

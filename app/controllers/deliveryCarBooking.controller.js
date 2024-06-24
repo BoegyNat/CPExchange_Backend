@@ -180,6 +180,12 @@ exports.postNewDeliveryCarBooking = async (req, res) => {
         costBooking,
       ]
     );
+
+    if (rows) {
+      res.status(200).send(rows);
+    } else {
+      res.status(400).send("Failed Booking");
+    }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }

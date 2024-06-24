@@ -11,14 +11,6 @@ exports.allVehicles = async (req, res) => {
     const row = await pool.query(
       "SELECT * FROM Vehicle JOIN VehicleBrandsAndModels ON Vehicle.idVehicleBrandAndModel = VehicleBrandsAndModels.idVehicleBrandsAndModels JOIN VehicleTypes ON Vehicle.idVehicleType = VehicleTypes.idVehicleTypes"
     );
-    // console.log(row);
-    // row.map( vehi => {
-    //   let type = VehicleType.find( typeVehi => typeVehi.idVehicleTypes == vehi.idVehicleType );
-    //   vehi.vehicleTypeNameEN = type.vehicleTypeNameEN;
-    //   vehi.vehicleTypeNameTH = type.vehicleTypeNameTH;
-    //   // let brandAndModel = VehicleBrandsAndModels.find( vehibrand => vehibrand.id == vehi.idVehicleBrandAndModel );
-    //   // vehi.imagepath = brandAndModel.imagepath;
-    // });
     res.status(200).send(row);
   } catch (error) {
     res.status(500).send({ message: error.message });
@@ -86,6 +78,7 @@ exports.postNewVehicle = async (req, res) => {
       idVehicleType,
       Plate_No,
       UseFor,
+      UseForEN,
       Vendor,
       RentDate,
       ExpireDate,
@@ -95,18 +88,20 @@ exports.postNewVehicle = async (req, res) => {
       Agency,
       CostCenter,
       CostElement,
+      idVehicleBrandAndModel,
     } = req.body[0];
     const rows = await pool.query(
       `
       INSERT INTO 
       Vehicle 
-          (idVehicleType, Plate_No, UseFor, Vendor, Agency, Cost, CostBooking, CostCenter, CostElement, site, ExpireDate, RentDate) 
+          (idVehicleType, Plate_No, UseFor, UseForEN, Vendor, Agency, Cost, CostBooking, CostCenter, CostElement, site, ExpireDate, RentDate, idVehicleBrandAndModel) 
       VALUES 
-        (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         idVehicleType,
         Plate_No,
         UseFor,
+        UseForEN,
         Vendor,
         Agency,
         Cost,
@@ -116,6 +111,7 @@ exports.postNewVehicle = async (req, res) => {
         site,
         ExpireDate,
         RentDate,
+        idVehicleBrandAndModel,
       ]
     );
     // console.log(idVehicleType, Plate_No, UseFor, Vendor, RentDate, ExpireDate, Cost, CostBooking, site, Agency, CostCenter, CostElement)

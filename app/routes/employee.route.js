@@ -39,4 +39,10 @@ module.exports = function (app) {
     [authJwt.verifyToken],
     employeeController.getEmployeesByCompany
   );
+
+  app.post(
+    "/api/edit_employee",
+    [authJwt.verifyToken],
+    employeeController.postEditProfileEmployee
+  );
 };

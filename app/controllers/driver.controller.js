@@ -143,6 +143,13 @@ exports.postEditDriver = async (req, res) => {
   try {
     const newDriver = req.body[0];
     const idDriver = req.body[1];
+    const idUser = await pool.query(
+      `
+      SELECT idUser FROM Driver WHERE idDriver = ?
+      `,
+      [idDriver]
+    );
+
     const newUser = await pool.query(
       `
       UPDATE 
@@ -154,7 +161,7 @@ exports.postEditDriver = async (req, res) => {
           mobileNumber = ?,
           company = ?
         WHERE 
-        idDriver = ?
+        idUser = ?
       
       `,
       [
@@ -163,7 +170,7 @@ exports.postEditDriver = async (req, res) => {
         newDriver.FullName,
         newDriver.Telephone,
         newDriver.Company,
-        idDriver,
+        idUser[0].idUser,
       ]
     );
     const result = await pool.query(

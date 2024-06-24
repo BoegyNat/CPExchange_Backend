@@ -96,3 +96,28 @@ exports.getEmployeesByCompany = async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 };
+
+exports.postEditProfileEmployee = async (req, res) => {
+  try {
+    const data = await pool.query(
+      "UPDATE UniHR.Employees SET houseNo=?, villageNo=?, road=?, subDistrict=?, district=?, provience=?, areaCode=?, latAddress=?, lngAddress=? WHERE idEmployees = ?",
+      [
+        req.body.houseNo,
+        req.body.villageNo,
+        req.body.road,
+        req.body.subDistrict,
+        req.body.district,
+        req.body.provience,
+        req.body.areaCode,
+        req.body.latAddress,
+        req.body.lngAddress,
+        req.body.idEmployees,
+      ]
+    );
+    if (data) {
+      res.status(200).send({ message: "Update Success" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};

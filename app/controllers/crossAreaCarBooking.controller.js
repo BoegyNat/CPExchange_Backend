@@ -294,7 +294,7 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
     const row = await pool.query(
       "SELECT * FROM CrossAreaCarBooking  ORDER BY idCrossAreaCarBooking DESC LIMIT 1"
     );
-
+    let success_Passenger = true;
     for (const data of Object.values(req.body[0].listPassenger)) {
       const namePassenger = data.name;
       const companyPassenger = data.company;
@@ -323,6 +323,15 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
           idCrossAreaCar,
         ]
       );
+
+      if (!field) {
+        success_Passenger = false;
+      }
+    }
+    if (rows && success_Passenger) {
+      res.status(200).send(rows);
+    } else {
+      res.status(400).send("Failed Booking");
     }
   } catch (error) {
     res.status(500).send({ message: error.message });
