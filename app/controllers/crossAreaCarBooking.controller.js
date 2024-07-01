@@ -303,15 +303,16 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
       const costCenter = data.costCenter;
       const costElement = data.costElement;
       const fromPlacePassenger = data.fromPlace;
+      const fromPlaceReturnPassenger = data.fromPlaceReturn;
       const idCrossAreaCar = row[0].idCrossAreaCarBooking;
       const field = await pool.query(
         `
               INSERT INTO 
               CrossAreaCarPassenger 
                   (name, company, telephoneMobile, email, costCenter,
-                    costElement, fromPlace, idCrossAreaCar) 
+                    costElement, fromPlace, fromPlaceReturn, idCrossAreaCar) 
               VALUES 
-                  (?,?,?,?,?,?,?,?)`,
+                  (?,?,?,?,?,?,?,?,?)`,
         [
           namePassenger,
           companyPassenger,
@@ -320,6 +321,7 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
           costCenter,
           costElement,
           fromPlacePassenger,
+          fromPlaceReturnPassenger,
           idCrossAreaCar,
         ]
       );

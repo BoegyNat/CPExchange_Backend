@@ -10,6 +10,12 @@ module.exports = function (app) {
     next();
   });
 
+  app.get(
+    "/api/driver_by_id/:id",
+    [authJwt.verifyToken],
+    driverController.getDriverById
+  );
+
   app.get("/api/drivers", [authJwt.verifyToken], driverController.allDrivers);
 
   app.post(

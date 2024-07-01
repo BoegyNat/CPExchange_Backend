@@ -40,6 +40,7 @@ exports.getLocationDriverById = async (req, res) => {
 
   res.status(200).send(rows);
 };
+
 exports.getAllSite = async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM ScgSite");

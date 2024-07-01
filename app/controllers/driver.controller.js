@@ -14,6 +14,19 @@ exports.allDrivers = async (req, res) => {
   }
 };
 
+exports.getDriverById = async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM Driver WHERE idDriver = ?", [
+      req.params.id,
+    ]);
+    if (result) {
+      res.status(200).send(result[0]);
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
 exports.postNewDriver = async (req, res) => {
   try {
     const newDriver = req.body;
