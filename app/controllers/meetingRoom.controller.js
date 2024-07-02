@@ -94,6 +94,12 @@ exports.postNewMeetingRoom = async (req, res) => {
         JSON.stringify(attachment),
       ]
     );
+    console.log(rows);
+    if (rows.affectedRows > 0) {
+      res.status(200).send({ message: "Success" });
+    } else {
+      res.status(204).send({ message: "Fail" });
+    }
     // const dataId = await pool.query(
     //   "SELECT idNewMeetingRoom FROM NewMeetingRoom ORDER BY idNewMeetingRoom DESC LIMIT 1;"
     // );
@@ -115,7 +121,6 @@ exports.postNewMeetingRoom = async (req, res) => {
 };
 
 exports.postNewMeetingRoomBooking = async (req, res) => {
-
   try {
     const {
       idUser,
@@ -150,8 +155,8 @@ exports.postNewMeetingRoomBooking = async (req, res) => {
         nameUser,
         phoneUser,
         emailUser,
-        (new Date(startDate+", " + timeStart)).toString(),
-        (new Date(endDate+", " + timeEnd)).toString(),
+        new Date(startDate + ", " + timeStart).toString(),
+        new Date(endDate + ", " + timeEnd).toString(),
         timeStart,
         timeEnd,
         numOfPeople,
@@ -159,6 +164,12 @@ exports.postNewMeetingRoomBooking = async (req, res) => {
         idMeetingRoom,
       ]
     );
+    console.log(rows);
+    if (rows.affectedRows > 0) {
+      res.status(200).send({ message: "Success" });
+    } else {
+      res.status(204).send({ message: "Fail" });
+    }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
@@ -371,7 +382,8 @@ exports.getMeetingRoomBookingByFilter = async (req, res) => {
       result = result;
     } else if (startdate != null) {
       result = result.filter(
-        (value) => startdate === JSON.stringify(new Date(value.startDate)).slice(1, 11)
+        (value) =>
+          startdate === JSON.stringify(new Date(value.startDate)).slice(1, 11)
       );
     }
     if (result) {
@@ -386,14 +398,17 @@ exports.getMeetingRoomBookingByFilter = async (req, res) => {
 exports.getAllMeetingRoomBookingByIdMeetingRoom = async (req, res) => {
   try {
     // console.log(new Date().toISOString().substring(0, 10))
-    
+
     let row = await pool.query(
       "SELECT * FROM NewMeetingRoomBooking WHERE idMeetingRoom = ? ",
       [parseInt(req.params.id)]
     );
 
-
-    row = row.filter((value)=> ((new Date(value.startDate)).toString().substring(0, 15) === (new Date()).toString().substring(0, 15) ))
+    row = row.filter(
+      (value) =>
+        new Date(value.startDate).toString().substring(0, 15) ===
+        new Date().toString().substring(0, 15)
+    );
     // row = row.filter((value)=> console.log((new Date(value.startDate)).toString().substring(0, 15) === (new Date()).toString().substring(0, 15) ))
 
     // console.log(new Date(row[0].startDate).toISOString().substring(0, 10))
@@ -409,14 +424,17 @@ exports.getAllMeetingRoomBookingByIdMeetingRoom = async (req, res) => {
 exports.getAllMeetingRoomBooking = async (req, res) => {
   try {
     // console.log(new Date().toISOString().substring(0, 10))
-    
+
     let row = await pool.query(
       "SELECT * FROM NewMeetingRoomBooking WHERE idMeetingRoom = ? ",
       [parseInt(req.params.id)]
     );
 
-
-    row = row.filter((value)=> ((new Date(value.startDate)).toString().substring(0, 15) === (new Date()).toString().substring(0, 15) ))
+    row = row.filter(
+      (value) =>
+        new Date(value.startDate).toString().substring(0, 15) ===
+        new Date().toString().substring(0, 15)
+    );
     // row = row.filter((value)=> console.log((new Date(value.startDate)).toString().substring(0, 15) === (new Date()).toString().substring(0, 15) ))
 
     // console.log(new Date(row[0].startDate).toISOString().substring(0, 10))
