@@ -249,10 +249,14 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
     fromPlaceReturn,
     toPlaceReturn,
     numberOfPassenger,
+    numberOfPassengerReturn,
     idTypeCar,
     departureDate,
     startTime,
     endTime,
+    returnDate,
+    returnStartTime,
+    returnEndTime,
     idVehicleBrandAndModel,
     purpose,
     idApproved,
@@ -266,9 +270,9 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
               INSERT INTO 
               CrossAreaCarBooking 
                   (name, telephoneMobile, email, flight, fromPlace, toPlace, fromPlaceReturn,
-                    toPlaceReturn, numberOfPassenger, idTypeCar, departureDate, startTime, endTime, purpose, idVehicleBrandAndModel, idUser, idApproved, totalPrice ) 
+                    toPlaceReturn, numberOfPassenger, numberOfPassengerReturn , idTypeCar, departureDate, startTime, endTime, returnDate, returnStartTime, returnEndTime, purpose, idVehicleBrandAndModel, idUser, idApproved, totalPrice ) 
               VALUES 
-                  (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                  (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         name,
         telephoneMobile,
@@ -279,10 +283,14 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
         fromPlaceReturn,
         toPlaceReturn,
         numberOfPassenger,
+        numberOfPassengerReturn,
         idTypeCar,
         departureDate,
         startTime,
         endTime,
+        returnDate,
+        returnStartTime,
+        returnEndTime,
         purpose,
         idVehicleBrandAndModel,
         idUser,
