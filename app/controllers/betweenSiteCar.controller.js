@@ -52,10 +52,12 @@ exports.getBetweenSiteCarByIdUserIsNotFinish = async (req, res) => {
       [req.params.idUser, false]
     );
     if (result.length > 0) {
-      const data = await getNearestDriver(
+      const data = await getNearestTime(
         result[0].gettingPlace,
-        result[0].toPlace
+        result[0].toPlace,
+        result[0].idDriverRouteDay
       );
+      console.log(data);
       // let result = BetweenSiteCars.find(
       //   (calling) =>
       //     calling.idUser == req.params.idUser && calling.isFinish == false
@@ -316,6 +318,110 @@ const getNearestDriver = async (getting, to) => {
       nearestDriver = row;
     }
   });
+
+  // const time = await axios
+  //   .post(
+  //     "https://routes.googleapis.com/directions/v2:computeRoutes",
+  //     {
+  //       origin: {
+  //         location: {
+  //           latLng: {
+  //             latitude: nearestDriver.LatDriver,
+  //             longitude: nearestDriver.LngDriver,
+  //           },
+  //         },
+  //       },
+  //       destination: {
+  //         location: {
+  //           latLng: {
+  //             latitude: targetLat,
+  //             longitude: gettingLng,
+  //           },
+  //         },
+  //       },
+  //       travelMode: "DRIVE",
+  //     },
+  //     {
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "X-Goog-Api-Key": "AIzaSyBOI0pcf56o-9yK_XoUxhZ3IOCulmr89T8",
+  //         "X-Goog-FieldMask":
+  //           "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline",
+  //       },
+  //     }
+  //   )
+  //   .then((res) => {
+  //     return res.data;
+  //   })
+  //   .catch((error) => {
+  //     console.log(error.response.data);
+  //     console.log(error.response.data.error.details);
+  //   });
+
+  // if (time) {
+  //   return res.status(200).send({ travel: time, driver: nearestDriver });
+  // } else {
+  //   return res.status(404).send({ message: "No time found" });
+  // }
+  const driver = await pool.query(
+    "SELECT * FROM Driver LEFT JOIN Vehicle ON Driver.idVehicle = Vehicle.idVehicle LEFT JOIN VehicleTypes ON Vehicle.idVehicleType = VehicleTypes.idVehicleTypes WHERE idUser = ?",
+    [nearestDriver.idDriver]
+  );
+
+  const origin = `${nearestDriver.LatDriver},${nearestDriver.LngDriver}`;
+  const destination = `${gettingLat},${gettingLng}`;
+  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins=${origin}&destinations=${destination}&key=${GOOGLE_MAPS_API_KEY}`;
+  const response = await axios.get(url);
+
+  if (response.data.status === "OK" && response.data.rows.length > 0) {
+    const element = response.data.rows[0].elements[0];
+    if (element.status === "OK") {
+      const durationText = element.duration.text; // ระยะเวลาในการเดินทาง (เช่น "1 hour 45 mins")
+      const durationValue = element.duration.value; // ระยะเวลาในการเดินทางในหน่วยวินาที
+      const currentTime = new Date();
+      const eta = new Date(currentTime.getTime() + durationValue * 1000);
+      const etaHours = eta.getHours().toString().padStart(2, "0");
+      const etaMinutes = eta.getMinutes().toString().padStart(2, "0");
+      const etaTimeString = `${etaHours}:${etaMinutes}`;
+
+      return {
+        driver: driver[0],
+        travel: element,
+        gettingPlace: { lat: gettingLat, lng: gettingLng },
+        targetPlace: { lat: targetLat, lng: targetLng },
+        nearestDriverId: nearestDriver.idDriver,
+        duration: durationText,
+        etaTimeString: etaTimeString,
+        eta: dayjs(eta).format("YYYY-MM-DD HH:mm:ss"),
+      };
+    }
+  }
+};
+
+const getNearestTime = async (getting, to, idUser) => {
+  const gettingSite = await pool.query(
+    "SELECT * FROM ScgSite WHERE idScgSite = ?",
+    [getting]
+  );
+  const toSite = await pool.query("SELECT * FROM ScgSite WHERE idScgSite = ?", [
+    to,
+  ]);
+
+  const gettingLat = parseFloat(gettingSite[0].Lat);
+  const gettingLng = parseFloat(gettingSite[0].Long);
+  const targetLat = parseFloat(toSite[0].Lat);
+  const targetLng = parseFloat(toSite[0].Long);
+
+  const results = await pool.query(
+    `
+      SELECT idDriver, LatDriver, LngDriver
+      FROM LocationDriver
+      WHERE idDriver = ?
+    `,
+    [idUser]
+  );
+
+  let nearestDriver = results[0];
 
   // const time = await axios
   //   .post(
