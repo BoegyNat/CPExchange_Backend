@@ -191,9 +191,78 @@ exports.updateDriverRoute = async (req, res) => {
   }
 };
 
-exports.getDriverWithDriverRouteDay = async (req, res) => {
+exports.getBetweenSiteWithRouteDate = async (req, res) => {
   try {
-    console.log("getDriverWithRouteDay");
+    const result = await pool.query(
+      "SELECT * FROM BetweenSiteCar WHERE arrivedTime >= ?",
+      [req.body.startDate]
+    );
+    if (result.length > 0) {
+      for (let index = 0; index < result.length; index++) {
+        const user = await pool.query(
+          "SELECT firstname_TH,lastname_TH FROM UniHR.Employees WHERE idEmployees = ?",
+          [result[index].idUser]
+        );
+        const driver = await pool.query(
+          "SELECT * FROM Users WHERE idUser = ?",
+          [result[index].idDriverRouteDay]
+        );
+        const gettingPlace = await pool.query(
+          "SELECT * FROM ScgSite WHERE idScgSite = ?",
+          [result[index].gettingPlace]
+        );
+        const toPlace = await pool.query(
+          "SELECT * FROM ScgSite WHERE idScgSite = ?",
+          [result[index].toPlace]
+        );
+        result[index].driver = driver[0];
+        result[index].user = user[0];
+        result[index].gettingPlace = gettingPlace[0];
+        result[index].toPlace = toPlace[0];
+      }
+      res.status(200).send(result);
+    } else {
+      res.status(404).send("Not Found");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getBetweenSiteWithRouteDateAndEndDate = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM BetweenSiteCar WHERE arrivedTime >= ? AND arrivedTime <= ?",
+      [req.body.startDate, req.body.endDate]
+    );
+    console.log(result);
+    if (result.length > 0) {
+      for (let index = 0; index < result.length; index++) {
+        const user = await pool.query(
+          "SELECT firstname_TH,lastname_TH FROM UniHR.Employees WHERE idEmployees = ?",
+          [result[index].idUser]
+        );
+        const driver = await pool.query(
+          "SELECT * FROM Users WHERE idUser = ?",
+          [result[index].idDriverRouteDay]
+        );
+        const gettingPlace = await pool.query(
+          "SELECT * FROM ScgSite WHERE idScgSite = ?",
+          [result[index].gettingPlace]
+        );
+        const toPlace = await pool.query(
+          "SELECT * FROM ScgSite WHERE idScgSite = ?",
+          [result[index].toPlace]
+        );
+        result[index].driver = driver[0];
+        result[index].user = user[0];
+        result[index].gettingPlace = gettingPlace[0];
+        result[index].toPlace = toPlace[0];
+      }
+      res.status(200).send(result);
+    } else {
+      res.status(404).send("Not Found");
+    }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }

@@ -50,6 +50,17 @@ module.exports = function (app) {
     [authJwt.verifyToken],
     betweenSiteCarController.getSite
   );
+
+  app.post(
+    "/api/get_between_site_with_route_date",
+    [authJwt.verifyToken],
+    betweenSiteCarController.getBetweenSiteWithRouteDate
+  );
+  app.post(
+    "/api/get_between_site_with_route_date_and_end_date",
+    [authJwt.verifyToken],
+    betweenSiteCarController.getBetweenSiteWithRouteDateAndEndDate
+  );
   app.post(
     "/api/post_new_between_site_car",
     [authJwt.verifyToken],
