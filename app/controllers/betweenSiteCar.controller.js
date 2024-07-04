@@ -57,7 +57,6 @@ exports.getBetweenSiteCarByIdUserIsNotFinish = async (req, res) => {
         result[0].toPlace,
         result[0].idDriverRouteDay
       );
-      console.log(data);
       // let result = BetweenSiteCars.find(
       //   (calling) =>
       //     calling.idUser == req.params.idUser && calling.isFinish == false
