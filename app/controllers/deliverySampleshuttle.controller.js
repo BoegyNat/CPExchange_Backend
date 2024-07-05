@@ -83,6 +83,24 @@ exports.getDeliverySampleshuttleByIdDriver = async (req, res) => {
     "SELECT * FROM DeliverySampleShuttle WHERE idDriver = ? or idDriver is NULL",
     [req.params.IdDriver]
   );
+  for (let i = 0; i < rows.length; i++) {
+    const fromPlace = await pool.query(
+      "SELECT * FROM ScgSite WHERE idScgSite = ?",
+      [rows[i].fromPlace]
+    );
+    const toPlace = await pool.query(
+      "SELECT * FROM ScgSite WHERE idScgSite = ?",
+      [rows[i].toPlace]
+    );
+    rows[i].fromPlaceName =
+      fromPlace[0].noSite !== null
+        ? `Site${fromPlace[0].noSite}: ${fromPlace[0].nameSite}`
+        : `${fromPlace[0].nameSite}`;
+    rows[i].toPlaceName =
+      toPlace[0].noSite !== null
+        ? `Site${toPlace[0].noSite}: ${toPlace[0].nameSite}`
+        : `${toPlace[0].nameSite}`;
+  }
   const result = await getUrlFormPath(rows, 4);
   // console.log(rows, "llll")
   // if(typeof rows[1] === 'undefined'){

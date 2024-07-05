@@ -10,8 +10,6 @@ const dayjs = require("dayjs");
 
 const GOOGLE_MAPS_API_KEY = "AIzaSyBOI0pcf56o-9yK_XoUxhZ3IOCulmr89T8";
 
-require("dayjs/locale/th");
-dayjs.locale("th");
 exports.getAllBetweenSiteCars = async (req, res) => {
   try {
     // BetweenSiteCars.map(calling => {
