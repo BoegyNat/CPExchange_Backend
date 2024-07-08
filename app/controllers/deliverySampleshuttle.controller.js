@@ -125,12 +125,30 @@ exports.getDeliverySampleshuttleByIdDriver = async (req, res) => {
 };
 
 exports.getDeliverySampleshuttleByIdBooking = async (req, res) => {
-  const [rows] = await pool.query(
+  const rows = await pool.query(
     "SELECT * FROM DeliverySampleShuttle WHERE idDeliverySampleShuttle = ?",
     [req.params.IdBooking]
   );
+
+  const fromPlace = await pool.query(
+    "SELECT * FROM ScgSite WHERE idScgSite = ?",
+    [rows[0].fromPlace]
+  );
+  const toPlace = await pool.query(
+    "SELECT * FROM ScgSite WHERE idScgSite = ?",
+    [rows[0].toPlace]
+  );
+  rows[0].fromPlaceName =
+    fromPlace[0].noSite !== null
+      ? `Site${fromPlace[0].noSite}: ${fromPlace[0].nameSite}`
+      : `${fromPlace[0].nameSite}`;
+  rows[0].toPlaceName =
+    toPlace[0].noSite !== null
+      ? `Site${toPlace[0].noSite}: ${toPlace[0].nameSite}`
+      : `${toPlace[0].nameSite}`;
+
   const result = await getUrlFormPath(rows, 5);
-  return res.status(200).json(result);
+  return res.status(200).json(result[0]);
 };
 
 exports.postDeliverySampleshuttleByStartDate = async (req, res) => {
