@@ -8,13 +8,13 @@ var jwt = require("jsonwebtoken");
 
 exports.signin = async (req, res) => {
   const { username, password } = req.body;
-  const isDriver = username.includes("driver");
+  const isDriver = username.toLowerCase().includes("driver");
 
   if (isDriver) {
     await pool
       .query(
         `SELECT username , password , idUser , authorities  , image FROM Users WHERE username = ? LIMIT 1;`,
-        [username]
+        [username.toLowerCase()]
       )
       .then((rows) => {
         if (rows.length > 0) {
@@ -65,7 +65,7 @@ SELECT
       1;
       
       `,
-        [username]
+        [username.toUpperCase()]
       )
 
       .then((rows) => {
