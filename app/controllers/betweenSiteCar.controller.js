@@ -377,9 +377,7 @@ const getNearestDriver = async (getting, to) => {
       const durationValue = element.duration.value; // ระยะเวลาในการเดินทางในหน่วยวินาที
       const currentTime = new Date();
       const eta = new Date(currentTime.getTime() + durationValue * 1000);
-      const etaHours = eta.getHours().toString().padStart(2, "0");
-      const etaMinutes = eta.getMinutes().toString().padStart(2, "0");
-      const etaTimeString = `${etaHours}:${etaMinutes}`;
+      const etaTimeString = dayjs(eta).format("HH:mm");
 
       return {
         driver: driver[0],
@@ -481,9 +479,10 @@ const getNearestTime = async (getting, to, idUser) => {
       const durationValue = element.duration.value; // ระยะเวลาในการเดินทางในหน่วยวินาที
       const currentTime = new Date();
       const eta = new Date(currentTime.getTime() + durationValue * 1000);
-      const etaHours = eta.getHours().toString().padStart(2, "0");
-      const etaMinutes = eta.getMinutes().toString().padStart(2, "0");
-      const etaTimeString = `${etaHours}:${etaMinutes}`;
+      const etaTimeString = dayjs(eta).format("HH:mm");
+
+      // const currentTime = dayjs();
+      // const eta = dayjs(currentTime).add(durationValue * 1000, "s");
 
       return {
         driver: driver[0],

@@ -4,42 +4,62 @@ exports.postNewDriverBooking = async (req, res) => {
   const {
     namePlaceFrom,
     namePlaceTo,
+    namePlaceFromReturn,
+    namePlaceToReturn,
     startDate,
     startTime,
     endDate,
     endTime,
+    startDateReturn,
+    startTimeReturn,
+    endDateReturn,
+    endTimeReturn,
+    twoWay,
     note,
     detailJourney,
     idUser,
     option,
   } = req.body[0];
 
-  const userData = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
-    idUser,
-  ]);
+  const userData = await pool.query(
+    "SELECT * FROM UniHR.Employees WHERE idEmployees = ?",
+    [idUser]
+  );
 
   try {
     const rows = await pool.query(
       `
           INSERT INTO 
           DriverBooking 
-              (namePlaceFrom, namePlaceTo, startDate, startTime, endDate, endTime, detailJourney, note, idUser, nameUser, addOption) 
+              (namePlaceFrom, namePlaceTo, namePlaceFromReturn, namePlaceToReturn, startDate, startTime, endDate, endTime, startDateReturn, startTimeReturn, endDateReturn, endTimeReturn, detailJourney, note, twoWay, idUser, nameUser, addOption) 
           VALUES 
-            (?,?,?,?,?,?,?,?,?,?,?)`,
+            (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         namePlaceFrom,
         namePlaceTo,
+        namePlaceFromReturn,
+        namePlaceToReturn,
         startDate,
         startTime,
         endDate,
         endTime,
+        startDateReturn,
+        startTimeReturn,
+        endDateReturn,
+        endTimeReturn,
         detailJourney,
         note,
+        twoWay,
         idUser,
-        userData[0].fNameThai,
+        userData[0].firstname_TH + " " + userData[0].lastname_TH,
         option,
       ]
     );
+    if (rows.affectedRows > 0) {
+      res.status(200).send(rows);
+    } else {
+      res.status(404).send("Error");
+    }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
@@ -48,7 +68,7 @@ exports.postNewDriverBooking = async (req, res) => {
 exports.getAllNewDriverBooking = async (req, res) => {
   try {
     const data = await pool.query(
-      "SELECT * FROM DriverBooking JOIN Users WHERE DriverBooking.idUser = Users.idUser"
+      "SELECT * FROM DriverBooking db LEFT JOIN UniHR.Employees e ON db.idUser = e.idEmployees LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany  WHERE db.idUser = e.idEmployees AND ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL ;"
     );
 
     if (data.length > 0) {
@@ -62,25 +82,45 @@ exports.getAllNewDriverBooking = async (req, res) => {
 };
 exports.postManageCarDriverBooking = async (req, res) => {
   try {
-    if (req.body.idDriver != undefined) {
+    if (req.body.isDriverFromCompany) {
       let row = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
         req.body.idDriver,
       ]);
       const rows = await pool.query(
-        "UPDATE DriverBooking SET  idDriver= ?, nameDriver = ?, idVehicle = ?, statusManageCar = ? WHERE idDriverBooking = ? ",
+        "UPDATE DriverBooking SET note = ?, isDriverFromCompany = ?, idDriver= ?, nameDriver = ?, phoneDriver = ?, statusManageCar = ? WHERE idDriverBooking = ? ",
         [
+          req.body.note,
+          req.body.isDriverFromCompany,
           req.body.idDriver,
           row[0].fNameThai,
-          req.body.idVehicle,
+          row[0].mobileNumber,
           "Success",
           req.body.id,
         ]
       );
+      if (rows.affectedRows > 0) {
+        res.status(200).send(rows);
+      } else {
+        res.status(404).send("Not Found");
+      }
     } else {
       const rows = await pool.query(
-        "UPDATE DriverBooking SET  idDriver= ?, nameDriver = ?, idVehicle = ?,statusManageCar = ?, WHERE idDriverBooking = ? ",
-        [req.body.idDriver, null, req.body.idVehicle, "Success", req.body.id]
+        "UPDATE DriverBooking SET note = ?, isDriverFromCompany = ?, idDriver= ?, nameDriver = ?, phoneDriver = ?, statusManageCar = ? WHERE idDriverBooking = ? ",
+        [
+          req.body.note,
+          req.body.isDriverFromCompany,
+          req.body.idDriver,
+          req.body.nameDriver,
+          req.body.phoneDriver,
+          "Success",
+          req.body.id,
+        ]
       );
+      if (rows.affectedRows > 0) {
+        res.status(200).send(rows);
+      } else {
+        res.status(404).send("Not Found");
+      }
     }
   } catch (error) {
     res.status(500).send({ message: error.message });
@@ -92,6 +132,12 @@ exports.deleteCarDriverBooking = async (req, res) => {
       "DELETE FROM DriverBooking WHERE idDriverBooking = ?",
       [req.body.idDriverBooking]
     );
+
+    if (rows.affectedRows > 0) {
+      res.status(200).send(rows);
+    } else {
+      res.status(404).send("Not Found");
+    }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }

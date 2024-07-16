@@ -98,6 +98,8 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
     name,
     telephoneMobile,
     email,
+    section,
+    department,
     flight,
     fromPlace,
     toPlace,
@@ -113,16 +115,18 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
       `
         INSERT INTO 
         CrossAreaCarPoolBooking 
-            (idUser, name, telephoneMobile, email, flight, fromPlace, 
+            (idUser, name, telephoneMobile, email, section, department, flight, fromPlace, 
             toPlace, numberOfPassenger, departureDate, fromPlaceReturn,
               toPlaceReturn, numberOfPassengerReturn) 
         VALUES 
-          (?,?,?,?,?,?,?,?,?,?,?,?)`,
+          (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         idUser,
         name,
         telephoneMobile,
         email,
+        section,
+        department,
         flight,
         fromPlace,
         toPlace,
@@ -149,20 +153,22 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
       const idUser = data.option.idEmployees;
       const toPlace = data.toPlace;
       const roundTime = data.roundTime;
+      const endTime = data.endTime;
       const purpose = data.purpose;
       const noteDeparture = data.noteDeparture;
       const fromPlaceReturn = data.fromPlaceReturn;
       const toPlaceReturn = data.toPlaceReturn;
-      const endTimeReturn = data.endTime;
+      const roundTimeReturn = data.roundTimeReturn;
+      const endTimeReturn = data.endTimeReturn;
       const idCrossAreaCarPool = row[0].idCrossAreaCarPoolBooking;
       const field = await pool.query(
         `
                   INSERT INTO 
                   CrossAreaCarPoolBookingPassenger 
                       (idCrossAreaCarPoolBooking, idUser, name,telephoneMobile, email, department, company, costCenter,
-                        costElement, fromPlace, toPlace, roundTime, purpose, noteDeparture, fromPlaceReturn, toPlaceReturn, endTimeReturn) 
+                        costElement, fromPlace, toPlace, roundTime, endTime, purpose, noteDeparture, fromPlaceReturn, toPlaceReturn, roundTimeReturn, endTimeReturn) 
                   VALUES 
-                      (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                      (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           idCrossAreaCarPool,
           idUser,
@@ -176,10 +182,12 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
           fromPlacePassenger,
           toPlace,
           roundTime,
+          endTime,
           purpose,
           noteDeparture,
           fromPlaceReturn,
           toPlaceReturn,
+          roundTimeReturn,
           endTimeReturn,
         ]
       );

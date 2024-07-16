@@ -163,16 +163,55 @@ exports.getRoutesByRouteLineAndRouteDate = async (req, res) => {
 
 exports.postEditIdDriverRoute = async (req, res) => {
   try {
-    const rows = await pool.query(
-      "UPDATE routeCrossAreaCarPools SET idDriver = ?, idVehicle=?, comment=? WHERE routeLine = ? ",
-      [
+    if (req.body.AnswerFromInput.isDriverFromCompany) {
+      const driver = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
         req.body.AnswerFromInput.idDriver,
-        req.body.AnswerFromInput.idVehicle,
-        req.body.AnswerFromInput.DetailManageCar,
-        req.body.routeLine,
-      ]
-    );
-    res.status(200).send(rows);
+      ]);
+      const vehicle = await pool.query(
+        "SELECT * FROM Vehicle WHERE idVehicle = ?",
+        [req.body.AnswerFromInput.idVehicle]
+      );
+      const rows = await pool.query(
+        "UPDATE routeCrossAreaCarPools SET idDriver = ?, isDriverFromCompany=?, nameDriver=?, phoneDriver=?, idVehicle=?, plate_No=?, statusManageCar=?, comment=? WHERE routeLine = ? ",
+        [
+          req.body.AnswerFromInput.idDriver,
+          true,
+          driver[0].fNameThai,
+          driver[0].mobileNumber,
+          req.body.AnswerFromInput.idVehicle,
+          vehicle[0].Plate_No,
+          "Success",
+          req.body.AnswerFromInput.DetailManageCar,
+          req.body.routeLine,
+        ]
+      );
+      if (rows) {
+        res.status(200).send(rows);
+      } else {
+        res.status(404).send({ message: "Not Found" });
+      }
+    } else {
+      const rows = await pool.query(
+        "UPDATE routeCrossAreaCarPools SET idDriver = ?, isDriverFromCompany=?, nameDriver=?, phoneDriver=?, idVehicle=?, plate_No=?, statusManageCar=?, comment=? WHERE routeLine = ? ",
+        [
+          req.body.AnswerFromInput.idDriver,
+          req.body.AnswerFromInput.isDriverFromCompany,
+          req.body.AnswerFromInput.nameDriver,
+          req.body.AnswerFromInput.phoneDriver,
+          req.body.AnswerFromInput.idVehicle,
+          req.body.AnswerFromInput.plate_No,
+          "Success",
+          req.body.AnswerFromInput.DetailManageCar,
+          req.body.routeLine,
+        ]
+      );
+      if (rows) {
+        res.status(200).send(rows);
+      } else {
+        res.status(404).send({ message: "Not Found" });
+      }
+    }
+
     // else{
     //     res.status(404).send({ message: "Not Found" });
     // }

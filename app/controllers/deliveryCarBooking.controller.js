@@ -116,6 +116,8 @@ exports.postNewDeliveryCarBooking = async (req, res) => {
       name,
       telephoneMobile,
       email,
+      section,
+      department,
       weightProduct,
       detail,
       fromPlace,
@@ -148,11 +150,11 @@ exports.postNewDeliveryCarBooking = async (req, res) => {
       `
             INSERT INTO 
             DeliveryCarBooking 
-                (idUser, idTypeVehicle, idVehicleBrandAndModel, name, telephoneMobile, email, nameDriver, nameRecipient, telephoneMobileRecipient,
+                (idUser, idTypeVehicle, idVehicleBrandAndModel, name, telephoneMobile, email, section, department, nameDriver, nameRecipient, telephoneMobileRecipient,
                     note, plate_No, purpose, statusApproved, statusManageCar, toPlace, fromPlace, typeProduct, weightProduct, date, startTime, endTime,
                     detail, imageVehicle,costBooking) 
             VALUES 
-              (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+              (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         idUser,
         idTypeVehicle,
@@ -160,6 +162,8 @@ exports.postNewDeliveryCarBooking = async (req, res) => {
         name,
         telephoneMobile,
         email,
+        section,
+        department,
         nameDriver,
         nameRecipient,
         telephoneMobileRecipient,
@@ -192,29 +196,56 @@ exports.postNewDeliveryCarBooking = async (req, res) => {
 };
 exports.postManageCarDeliveryCarBooking = async (req, res) => {
   try {
-    const row = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
-      req.body.nameDriver,
-    ]);
-    const idDriver = req.body.nameDriver;
-    const rows = await pool.query(
-      "UPDATE DeliveryCarBooking SET  idTypeVehicle= ?, idVehicleBrandAndModel= ? ,nameDriver= ?, note = ?, plate_No= ?, statusManageCar = ?, idDriver = ?, idVehicle = ? WHERE idDeliveryCarBooking = ? ",
-      [
-        req.body.idTypeCar,
-        req.body.idVehicleBrandAndModel,
-        row[0].fNameThai,
-        req.body.note,
-        req.body.plate_No,
-        "Succes",
-        idDriver,
-        req.body.idVehicle,
-        req.body.id,
-      ]
-    );
+    if (req.body.isDriverFromCompany) {
+      const row = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
+        req.body.nameDriver,
+      ]);
+      const idDriver = req.body.nameDriver;
+      const rows = await pool.query(
+        "UPDATE DeliveryCarBooking SET  idTypeVehicle= ?, idVehicleBrandAndModel= ? ,nameDriver= ?,phoneDriver= ?, note = ?, plate_No= ?, statusManageCar = ?, isDriverFromCompany = ?, idDriver = ?, idVehicle = ? WHERE idDeliveryCarBooking = ? ",
+        [
+          req.body.idTypeCar,
+          req.body.idVehicleBrandAndModel,
+          row[0].fNameThai,
+          row[0].mobileNumber,
+          req.body.note,
+          req.body.plate_No,
+          "Succes",
+          req.body.isDriverFromCompany,
+          idDriver,
+          req.body.idVehicle,
+          req.body.id,
+        ]
+      );
 
-    if (rows) {
-      res.status(200).send(rows);
+      if (rows) {
+        res.status(200).send(rows);
+      } else {
+        res.status(404).send("Not Found Booking");
+      }
     } else {
-      res.status(404).send("Not Found Booking");
+      const rows = await pool.query(
+        "UPDATE DeliveryCarBooking SET  idTypeVehicle= ?, idVehicleBrandAndModel= ? ,nameDriver= ?,phoneDriver= ?, note = ?, plate_No= ?, statusManageCar = ?, isDriverFromCompany = ?, idDriver = ?, idVehicle = ? WHERE idDeliveryCarBooking = ? ",
+        [
+          req.body.idTypeCar,
+          req.body.idVehicleBrandAndModel,
+          req.body.nameDriver,
+          req.body.phoneDriver,
+          req.body.note,
+          req.body.plate_No,
+          "Succes",
+          req.body.isDriverFromCompany,
+          req.body.idDriver,
+          req.body.idVehicle,
+          req.body.id,
+        ]
+      );
+
+      if (rows) {
+        res.status(200).send(rows);
+      } else {
+        res.status(404).send("Not Found Booking");
+      }
     }
   } catch (error) {
     res.status(500).send({ message: error.message });

@@ -99,11 +99,13 @@ exports.getInAreaCarBookingByStartDate = async (req, res) => {
     );
     const vehicleType = await pool.query("SELECT * FROM VehicleTypes");
     row.map((booking) => {
-      let type = vehicleType.find(
-        (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
-      );
-      booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
-      booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
+      if (booking.isDriverFromCompany) {
+        let type = vehicleType.find(
+          (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
+        );
+        booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
+        booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
+      }
     });
     if (row.length > 0) {
       res.status(200).send(row);
@@ -135,11 +137,13 @@ exports.getInAreaCarBookingByStartDateAndEndDate = async (req, res) => {
     const vehicleType = await pool.query("SELECT * FROM VehicleTypes");
 
     row.map((booking) => {
-      let type = vehicleType.find(
-        (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
-      );
-      booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
-      booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
+      if (booking.isDriverFromCompany) {
+        let type = vehicleType.find(
+          (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
+        );
+        booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
+        booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
+      }
     });
     if (row.length > 0) {
       res.status(200).send(row);
@@ -168,6 +172,8 @@ exports.postNewInAreaCarBooking = async (req, res) => {
       gaSite,
       purpose,
       note,
+      section,
+      department,
       company,
       costCenter,
       costElement,
@@ -187,9 +193,9 @@ exports.postNewInAreaCarBooking = async (req, res) => {
         `
         INSERT INTO
         inAreaCarBooking
-            (idUser, name, telephoneMobile, email, flight, fromPlace, toPlace, numberOfPassenger, departureDate, startTime, endTime, idTypeCar, idVehicleBrandAndModel, gaSite, purpose, note, company, costCenter, costElement, idApprovedUser, nameApproved, departmentApproved, companyApproved, statusApproved, Approved, statusManageCar, plate_No, nameDriver, idDriver, statusRating, idReview )
+            (idUser, name, telephoneMobile, email, flight, fromPlace, toPlace, numberOfPassenger, departureDate, startTime, endTime, idTypeCar, idVehicleBrandAndModel, gaSite, purpose, note,section, department, company, costCenter, costElement, idApprovedUser, nameApproved, departmentApproved, companyApproved, statusApproved, Approved, statusManageCar, plate_No, nameDriver, idDriver, statusRating, idReview )
         VALUES
-          (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           idUser,
           name,
@@ -207,6 +213,8 @@ exports.postNewInAreaCarBooking = async (req, res) => {
           gaSite,
           purpose,
           note,
+          section,
+          department,
           company,
           costCenter,
           costElement,
@@ -246,6 +254,8 @@ exports.postNewInAreaCarBooking = async (req, res) => {
               gaSite: gaSite,
               purpose: purpose,
               note: note,
+              section: section,
+              department: department,
               company: company,
               costCenter: costCenter,
               costElement: costElement,
@@ -265,32 +275,58 @@ exports.postNewInAreaCarBooking = async (req, res) => {
 };
 exports.postManageCarInAreaCarBooking = async (req, res) => {
   try {
-    console.log(req.body);
-
-    const row = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
-      req.body[0].nameDriver,
-    ]);
-    const idDriver = req.body[0].nameDriver;
-    const rows = await pool.query(
-      "UPDATE inAreaCarBooking SET  idTypeCar= ?, idVehicleBrandAndModel= ?, gaSite= ?,note= ?, statusManageCar = ?, idVehicle = ?, model = ? , plate_No= ?, nameDriver = ?, idDriver = ? WHERE idinAreaCarBooking = ? ",
-      [
-        req.body[0].idTypeCar,
-        req.body[0].idVehicleBrandAndModel,
-        req.body[0].gaSite,
-        req.body[0].note,
-        "Success",
-        req.body[0].idVehicle,
-        req.body[0].model,
-        req.body[0].plate_No,
-        row[0].fNameThai,
-        idDriver,
-        req.body[0].id,
-      ]
-    );
-    if (rows) {
-      res.status(200).send(rows);
+    if (req.body[0].isDriverFromCompany) {
+      const row = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
+        req.body[0].nameDriver,
+      ]);
+      const idDriver = req.body[0].nameDriver;
+      const rows = await pool.query(
+        "UPDATE inAreaCarBooking SET  idTypeCar= ?, idVehicleBrandAndModel= ?, gaSite= ?,note= ?, statusManageCar = ?, idVehicle = ?, model = ? , plate_No= ?, isDriverFromCompany = ?, nameDriver = ?, phoneDriver = ?, idDriver = ? WHERE idinAreaCarBooking = ? ",
+        [
+          req.body[0].idTypeCar,
+          req.body[0].idVehicleBrandAndModel,
+          req.body[0].gaSite,
+          req.body[0].note,
+          "Success",
+          req.body[0].idVehicle,
+          req.body[0].model,
+          req.body[0].plate_No,
+          req.body[0].isDriverFromCompany,
+          row[0].fNameThai,
+          row[0].mobileNumber,
+          idDriver,
+          req.body[0].id,
+        ]
+      );
+      if (rows) {
+        res.status(200).send(rows);
+      } else {
+        res.status(404).send("Not Found Booking");
+      }
     } else {
-      res.status(404).send("Not Found Booking");
+      const rows = await pool.query(
+        "UPDATE inAreaCarBooking SET  idTypeCar= ?, idVehicleBrandAndModel= ?, gaSite= ?,note= ?, statusManageCar = ?, idVehicle = ?, model = ? , plate_No= ?, isDriverFromCompany = ?, nameDriver = ?, phoneDriver = ?, idDriver = ? WHERE idinAreaCarBooking = ? ",
+        [
+          req.body[0].idTypeCar,
+          req.body[0].idVehicleBrandAndModel,
+          req.body[0].gaSite,
+          req.body[0].note,
+          "Success",
+          req.body[0].idVehicle,
+          req.body[0].model,
+          req.body[0].plate_No,
+          req.body[0].isDriverFromCompany,
+          req.body[0].nameDriver,
+          req.body[0].phoneDriver,
+          req.body[0].idDriver,
+          req.body[0].id,
+        ]
+      );
+      if (rows) {
+        res.status(200).send(rows);
+      } else {
+        res.status(404).send("Not Found Booking");
+      }
     }
   } catch (error) {
     res.status(500).send({ message: error.message });

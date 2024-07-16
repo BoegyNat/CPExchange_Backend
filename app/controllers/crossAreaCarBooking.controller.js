@@ -170,22 +170,24 @@ exports.getCrossAreaCarBookingByStartDate = async (req, res) => {
     );
 
     data.map((booking) => {
-      let type = vehicleTypes.find(
-        (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
-      );
-      booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
-      booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
-      let brandAndModel = vehicleBrandsAndModels.find(
-        (vehibrand) =>
-          vehibrand.idVehicleBrandsAndModels == booking.idVehicleBrandAndModel
-      );
-      booking.brand = brandAndModel.brand;
-      booking.model = brandAndModel.model;
-      booking.motor = brandAndModel.motor;
-      booking.gear = brandAndModel.gear;
-      booking.gas = brandAndModel.gas;
-      booking.breakABS = brandAndModel.breakABS;
-      booking.imagepath = brandAndModel.imagepath;
+      if (booking.isDriverFromCompany) {
+        let type = vehicleTypes.find(
+          (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
+        );
+        booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
+        booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
+        let brandAndModel = vehicleBrandsAndModels.find(
+          (vehibrand) =>
+            vehibrand.idVehicleBrandsAndModels == booking.idVehicleBrandAndModel
+        );
+        booking.brand = brandAndModel.brand;
+        booking.model = brandAndModel.model;
+        booking.motor = brandAndModel.motor;
+        booking.gear = brandAndModel.gear;
+        booking.gas = brandAndModel.gas;
+        booking.breakABS = brandAndModel.breakABS;
+        booking.imagepath = brandAndModel.imagepath;
+      }
     });
     if (data.length > 0) {
       res.status(200).send(data);
@@ -210,22 +212,24 @@ exports.getCrossAreaCarBookingByStartDateAndEndDate = async (req, res) => {
     );
 
     result.map((booking) => {
-      let type = vehicleTypes.find(
-        (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
-      );
-      booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
-      booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
-      let brandAndModel = vehicleBrandsAndModels.find(
-        (vehibrand) =>
-          vehibrand.idVehicleBrandsAndModels == booking.idVehicleBrandAndModel
-      );
-      booking.brand = brandAndModel.brand;
-      booking.model = brandAndModel.model;
-      booking.motor = brandAndModel.motor;
-      booking.gear = brandAndModel.gear;
-      booking.gas = brandAndModel.gas;
-      booking.breakABS = brandAndModel.breakABS;
-      booking.imagepath = brandAndModel.imagepath;
+      if (booking.isDriverFromCompany) {
+        let type = vehicleTypes.find(
+          (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
+        );
+        booking.vehicleTypeNameEN = type.vehicleTypeNameEN;
+        booking.vehicleTypeNameTH = type.vehicleTypeNameTH;
+        let brandAndModel = vehicleBrandsAndModels.find(
+          (vehibrand) =>
+            vehibrand.idVehicleBrandsAndModels == booking.idVehicleBrandAndModel
+        );
+        booking.brand = brandAndModel.brand;
+        booking.model = brandAndModel.model;
+        booking.motor = brandAndModel.motor;
+        booking.gear = brandAndModel.gear;
+        booking.gas = brandAndModel.gas;
+        booking.breakABS = brandAndModel.breakABS;
+        booking.imagepath = brandAndModel.imagepath;
+      }
     });
     if (result.length > 0) {
       res.status(200).send(result);
@@ -243,6 +247,8 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
     name,
     telephoneMobile,
     email,
+    section,
+    department,
     flight,
     fromPlace,
     toPlace,
@@ -269,14 +275,16 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
       `
               INSERT INTO 
               CrossAreaCarBooking 
-                  (name, telephoneMobile, email, flight, fromPlace, toPlace, fromPlaceReturn,
+                  (name, telephoneMobile, email, section, department, flight, fromPlace, toPlace, fromPlaceReturn,
                     toPlaceReturn, numberOfPassenger, numberOfPassengerReturn , idTypeCar, departureDate, startTime, endTime, returnDate, returnStartTime, returnEndTime, purpose, idVehicleBrandAndModel, idUser, idApproved, totalPrice ) 
               VALUES 
-                  (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                  (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         name,
         telephoneMobile,
         email,
+        section,
+        department,
         flight,
         fromPlace,
         toPlace,
@@ -350,38 +358,58 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
 
 exports.postManageCarCrossAreaCarBooking = async (req, res) => {
   try {
-    const row = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
-      req.body.nameDriver,
-    ]);
-    const idDriver = req.body.nameDriver;
-    const rows = await pool.query(
-      "UPDATE CrossAreaCarBooking SET idVehicleBrandAndModel = ?, idVehicle= ?, model = ?, nameDriver= ?, note= ?, plate_No= ?, statusManageCar = ?, idDriver = ?, statusApproved = ?, Approved = ? WHERE idCrossAreaCarBooking = ? ",
-      [
-        req.body.idVehicleBrandAndModel,
-        req.body.idVehicle,
-        req.body.model,
-        row[0].fNameThai,
-        req.body.note,
-        req.body.plate_No,
-        "Success",
-        idDriver,
-        null,
-        null,
-        req.body.id,
-      ]
-    );
-
-    // let manageCar = req.body;
-    // CrossAreaCarBookings.find(booking => booking.id == req.body.id).statusManageCar = true;
-    // CrossAreaCarBookings.find(booking => booking.id == req.body.id).idTypeCar = manageCar.idTypeCar;
-    // CrossAreaCarBookings.find(booking => booking.id == req.body.id).model = manageCar.model;
-    // CrossAreaCarBookings.find(booking => booking.id == req.body.id).plate_No = manageCar.plate_No;
-    // CrossAreaCarBookings.find(booking => booking.id == req.body.id).nameDriver = manageCar.nameDriver;
-    // CrossAreaCarBookings.find(booking => booking.id == req.body.id).note = manageCar.note;
-    if (rows) {
-      res.status(200).send(rows);
+    if (req.body.isDriverFromCompany) {
+      const row = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
+        req.body.nameDriver,
+      ]);
+      const idDriver = req.body.nameDriver;
+      const rows = await pool.query(
+        "UPDATE CrossAreaCarBooking SET idVehicleBrandAndModel = ?, idVehicle= ?, model = ?, isDriverFromCompany = ?, nameDriver= ?,phoneDriver= ?, note= ?, plate_No= ?, statusManageCar = ?, idDriver = ?, statusApproved = ?, Approved = ? WHERE idCrossAreaCarBooking = ? ",
+        [
+          req.body.idVehicleBrandAndModel,
+          req.body.idVehicle,
+          req.body.model,
+          req.body.isDriverFromCompany,
+          row[0].fNameThai,
+          row[0].mobileNumber,
+          req.body.note,
+          req.body.plate_No,
+          "Success",
+          idDriver,
+          null,
+          null,
+          req.body.id,
+        ]
+      );
+      if (rows) {
+        res.status(200).send(rows);
+      } else {
+        res.status(404).send("Not Found Booking");
+      }
     } else {
-      res.status(404).send("Not Found Booking");
+      const rows = await pool.query(
+        "UPDATE CrossAreaCarBooking SET idVehicleBrandAndModel = ?, idVehicle= ?, model = ?, isDriverFromCompany = ?, nameDriver= ?,phoneDriver= ?, note= ?, plate_No= ?, statusManageCar = ?, idDriver = ?, statusApproved = ?, Approved = ? WHERE idCrossAreaCarBooking = ? ",
+        [
+          req.body.idVehicleBrandAndModel,
+          req.body.idVehicle,
+          req.body.model,
+          req.body.isDriverFromCompany,
+          req.body.nameDriver,
+          req.body.phoneDriver,
+          req.body.note,
+          req.body.plate_No,
+          "Success",
+          req.body.idDriver,
+          null,
+          null,
+          req.body.id,
+        ]
+      );
+      if (rows) {
+        res.status(200).send(rows);
+      } else {
+        res.status(404).send("Not Found Booking");
+      }
     }
   } catch (error) {
     res.status(500).send({ message: error.message });
