@@ -40,8 +40,8 @@ exports.getCrossAreaCarBookingById = async (req, res) => {
       );
 
       result.passengers = await pool.query(
-        "SELECT * FROM CrossAreaCarBookingPassengers WHERE idCrossAreaCarBooking = ?",
-        [result.id]
+        "SELECT * FROM CrossAreaCarPassenger WHERE idCrossAreaCar = ?",
+        [result.idCrossAreaCarBooking]
       );
 
       res.status(200).send(result);
@@ -60,28 +60,33 @@ exports.getCrossAreaCarBookingByIdUser = async (req, res) => {
       [req.params.idUser]
     );
     if (row.length > 0) {
+      const User = await pool.query(
+        "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+        [req.params.idUser]
+      );
+      const VehicleBrandsAndModels = await pool.query(
+        "SELECT * FROM VehicleBrandsAndModels"
+      );
+      const VehicleTypes = await pool.query("SELECT * FROM VehicleTypes");
+
       row.map(async (booking) => {
-        booking.user = await pool.query(
-          "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
-          [booking.idUser]
+        booking.user = User[0];
+
+        booking.vehicleBrandsAndModels = VehicleBrandsAndModels.find(
+          (vehicle) =>
+            vehicle.idVehicleBrandsAndModels == booking.idVehicleBrandAndModel
         );
 
-        booking.vehicleBrandsAndModels = await pool.query(
-          "SELECT * FROM VehicleBrandsAndModels WHERE idVehicleBrandsAndModels = ?",
-          [booking.idVehicleBrandAndModel]
-        );
-
-        booking.vehicleTypes = await pool.query(
-          "SELECT * FROM VehicleTypes WHERE idVehicleTypes = ?",
-          [booking.idTypeCar]
+        booking.vehicleTypes = VehicleTypes.find(
+          (type) => type.idVehicleTypes == booking.idTypeCar
         );
 
         booking.passengers = await pool.query(
-          "SELECT * FROM CrossAreaCarBookingPassengers WHERE idCrossAreaCarBooking = ?",
-          [booking.id]
+          "SELECT * FROM CrossAreaCarPassenger WHERE idCrossAreaCar = ?",
+          [booking.idCrossAreaCarBooking]
         );
       });
-      res.status(200).send(result);
+      res.status(200).send(row);
     } else {
       res.status(404).send("Not Found Booking");
     }

@@ -341,15 +341,21 @@ exports.postUpdateDeliveryStatus = async (req, res) => {
 
 exports.getDeliverySampleShuttleByFilter = async (req, res) => {
   try {
-    const { nameSample, fromSite, toSite, status, startdate, enddate } =
+    const { nameSample, fromSite, toSite, status, startdate, enddate, idUser } =
       req.body;
     // console.log(nameSample, fromSite, toSite, status, startdate, enddate);
     let result;
     if (nameSample === "") {
-      result = await pool.query("SELECT * FROM DeliverySampleShuttle");
+      result = await pool.query(
+        "SELECT * FROM DeliverySampleShuttle WHERE idUser = ?",
+        [idUser]
+      );
     } else {
-      result = await pool.query(`SELECT  * FROM DeliverySampleShuttle WHERE
-      LOWER(DeliverySampleShuttle.nameSample) LIKE '%${nameSample.toLowerCase()}%'`);
+      result = await pool.query(
+        `SELECT  * FROM DeliverySampleShuttle WHERE
+      LOWER(DeliverySampleShuttle.nameSample) LIKE '%${nameSample.toLowerCase()}%' AND idUser = ?`,
+        [idUser]
+      );
     }
 
     if (fromSite === "ทั้งหมด") {

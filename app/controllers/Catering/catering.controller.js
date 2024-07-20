@@ -57,7 +57,7 @@ exports.getCateringById = async (req, res) => {
       "SELECT * FROM CateringRequest WHERE idCateringRequest = ?",
       [parseInt(req.params.cateringId)]
     );
-   
+
     if (result) {
       let AllOrderFood = await pool.query(
         "SELECT * FROM CateringRequestFoodList"
@@ -74,7 +74,6 @@ exports.getCateringById = async (req, res) => {
           let food = AllFood.find(
             (f) => parseInt(o.idCateringFood) === parseInt(f.idCateringFood)
           );
-
 
           if (JSON.parse(food.image).length > 0) {
             food.fileUrl = await Promise.all(
@@ -185,22 +184,24 @@ exports.changeStatusById = async (req, res) => {
 exports.getAllRestaurants = async (req, res) => {
   try {
     let result = await pool.query("SELECT * FROM CateringRestaurant");
-    
-    result = await Promise.all(result.map( async (value)=>{
-      if(JSON.parse(value.image).length > 0){
-        let datapath = await bucketService.getSignedUrl(
-          `catering/cateringRestaurant/${JSON.parse(value.image)[0].path}`
-        );
+
+    result = await Promise.all(
+      result.map(async (value) => {
+        if (JSON.parse(value.image).length > 0) {
+          let datapath = await bucketService.getSignedUrl(
+            `catering/cateringRestaurant/${JSON.parse(value.image)[0].path}`
+          );
+          return {
+            ...value,
+            fileUrl: datapath,
+          };
+        }
         return {
           ...value,
-          fileUrl: datapath,
+          fileUrl: [],
         };
-      }
-      return {
-        ...value,
-        fileUrl: [],
-      };
-    }))
+      })
+    );
     let AllFood = await pool.query("SELECT * FROM CateringFood");
     let allfood = [];
     result = await Promise.all(
@@ -250,7 +251,7 @@ exports.getAllRestaurants = async (req, res) => {
         };
       })
     );
-    
+
     return res.status(200).send({
       success: true,
       data: result,
@@ -277,15 +278,14 @@ exports.getRestaurantById = async (req, res) => {
         error: "not found",
       });
     }
-    if(JSON.parse(result.image).length > 0){
+    if (JSON.parse(result.image).length > 0) {
       result.fileUrl = await bucketService.getSignedUrl(
         `catering/cateringRestaurant/${JSON.parse(result.image)[0].path}`
       );
+    } else {
+      result.fileUrl = [];
     }
-    else{
-      result.fileUrl =[]
-    }
-    console.log(result)
+    console.log(result);
     let allfood = [];
 
     let AllFood = await pool.query("SELECT * FROM CateringFood");
@@ -333,28 +333,27 @@ exports.addNewRestaurant = async (req, res) => {
   try {
     const file = req.files.attachment;
     const fileRes = req.files.resFile;
-    console.log(
-      JSON.parse(req.body.Result),
-      req.files.resFile,
-      req.files.attachment
-    );
+    // console.log(
+    //   JSON.parse(req.body.Result),
+    //   req.files.resFile,
+    //   req.files.attachment
+    // );
     // // console.log(req.body.length)
     const { nameRestaurant, categories, location, name, phone, email } =
       JSON.parse(req.body.Result).Restaurant.data;
     const { locationfrommap, Lat, Lng } = JSON.parse(req.body.Result).Restaurant
       .dataMap[0];
-    console.log(
-      nameRestaurant,
-      categories,
-      location,
-      name,
-      phone,
-      email,
-      locationfrommap,
-      Lat,
-      Lng
-    );
-
+    // console.log(
+    //   nameRestaurant,
+    //   categories,
+    //   location,
+    //   name,
+    //   phone,
+    //   email,
+    //   locationfrommap,
+    //   Lat,
+    //   Lng
+    // );
 
     const resultId = await pool.query(
       "SELECT * FROM CateringRestaurant ORDER BY idCateringRestaurant DESC LIMIT 1"
@@ -364,7 +363,8 @@ exports.addNewRestaurant = async (req, res) => {
     if (resultId.length == 0) {
       lastedCateringRestaurantId = lastedCateringRestaurantId + 1;
     } else {
-      lastedCateringRestaurantId = parseInt(resultId[0].idCateringRestaurant) + 1;
+      lastedCateringRestaurantId =
+        parseInt(resultId[0].idCateringRestaurant) + 1;
     }
 
     const avatarNameRes =
@@ -407,19 +407,21 @@ exports.addNewRestaurant = async (req, res) => {
         const resultDataId = await pool.query(
           "SELECT * FROM CateringRestaurant ORDER BY idCateringRestaurant DESC LIMIT 1"
         );
-        const resultDataIdFood = await pool.query(
-          "SELECT * FROM CateringFood ORDER BY idCateringFood DESC LIMIT 1"
-        );
+        // const resultDataIdFood = await pool.query(
+        //   "SELECT * FROM CateringFood ORDER BY idCateringFood DESC LIMIT 1"
+        // );
         let lastedMaintenanceId = 0;
 
-        if (resultDataIdFood.length == 0) {
+        if (resultDataId.length == 0) {
           lastedMaintenanceId = lastedMaintenanceId + 1;
         } else {
           lastedMaintenanceId =
-            parseInt(resultDataIdFood[0].idCateringRestaurant) + 1;
+            parseInt(resultDataId[0].idCateringRestaurant) + 1;
         }
+        console.log(lastedMaintenanceId);
         const avatarName =
           "unknow" +
+          i +
           "." +
           file[i].originalname.split(".")[
             file[i].originalname.split(".").length - 1
