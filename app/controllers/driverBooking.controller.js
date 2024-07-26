@@ -166,6 +166,22 @@ exports.getAllDriverBookingByIdUser = async (req, res) => {
       [req.params.idUser]
     );
 
+    const driver = await pool.query("SELECT * FROM Users");
+    const User = await pool.query(
+      "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+      [req.params.idUser]
+    );
+
+    result.map((booking) => {
+      if (booking.idDriver !== null) {
+        booking.driver = driver.find(
+          (driver) => driver.idUser == booking.idDriver
+        );
+      }
+
+      booking.user = User[0];
+    });
+
     if (result.length > 0) {
       res.status(200).send(result);
     } else {
@@ -312,7 +328,6 @@ exports.getDriverBookingByFilterByIdUser = async (req, res) => {
       );
     }
 
-    console.log(result);
     if (startdate === null) {
       result = result;
     } else if (startdate != null) {
@@ -320,7 +335,24 @@ exports.getDriverBookingByFilterByIdUser = async (req, res) => {
         (value) => startdate === value.startDate.slice(0, 10)
       );
     }
-    console.log(result);
+
+    if (result.length > 0) {
+      const driver = await pool.query("SELECT * FROM Users");
+      const User = await pool.query(
+        "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+        [req.params.idUser]
+      );
+
+      result.map((booking) => {
+        if (booking.idDriver !== null) {
+          booking.driver = driver.find(
+            (driver) => driver.idUser == booking.idDriver
+          );
+        }
+
+        booking.user = User[0];
+      });
+    }
     if (result) {
       return res.status(200).send(result);
     } else {
