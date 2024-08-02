@@ -43,19 +43,48 @@ exports.getInAreaCarBookingById = async (req, res) => {
 
 exports.getInAreaCarBookingByIdUser = async (req, res) => {
   try {
-    let result = InAreaCarBookings.filter(
-      (booking) => booking.idUser == req.params.idUser
-    );
     const row = await pool.query(
       "SELECT * FROM inAreaCarBooking WHERE idUser = ?",
       [req.params.idUser]
     );
+
+    const vehicleType = await pool.query("SELECT * FROM VehicleTypes");
+
     if (row.length > 0) {
       row.map((booking) => {
-        booking.vehicleTypes = VehicleTypes.find(
-          (vehitype) => vehitype.id == booking.idTypeCar
+        booking.vehicleTypes = vehicleType.find(
+          (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
         );
       });
+
+      res.status(200).send(row);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getInAreaCarBookingByIdDriver = async (req, res) => {
+  try {
+    const row = await pool.query(
+      "SELECT * FROM inAreaCarBooking WHERE idDriver = ?",
+      [req.params.idDriver]
+    );
+
+    if (row.length > 0) {
+      for (const booking of row) {
+        booking.vehicleBrandsAndModels = await pool.query(
+          "SELECT * FROM VehicleBrandsAndModels WHERE idVehicleBrandsAndModels = ?",
+          [booking.idVehicleBrandAndModel]
+        );
+
+        booking.vehicleTypes = await pool.query(
+          "SELECT * FROM VehicleTypes WHERE idVehicleTypes = ?",
+          [booking.idTypeCar]
+        );
+      }
       res.status(200).send(row);
     } else {
       res.status(404).send("Not Found Booking");
@@ -447,6 +476,62 @@ exports.getInAreaCarBookingByFilter = async (req, res) => {
     } else if (startdate != null) {
       result = result.filter(
         (value) => startdate === value.departureDate.slice(0, 10)
+      );
+    }
+
+    if (result) {
+      res.status(200).send(result);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getInAreaCarBookingByFilterByIdDriver = async (req, res) => {
+  try {
+    const { name, enddate, startdate, idDriver } = req.body;
+    let result;
+    const VehicleType = await pool.query("SELECT * FROM VehicleTypes");
+    if (name === "") {
+      result = await pool.query(
+        "SELECT * FROM inAreaCarBooking  WHERE idDriver = ?",
+        [idDriver]
+      );
+
+      result.map((booking) => {
+        booking.vehicleTypes = VehicleType.find(
+          (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
+        );
+      });
+    } else {
+      result = await pool.query(
+        `SELECT  * FROM inAreaCarBooking WHERE
+                LOWER(inAreaCarBooking.name) LIKE '%${name.toLowerCase()}%' AND idDriver = ?`,
+        [idDriver]
+      );
+
+      result.map((booking) => {
+        booking.vehicleTypes = VehicleType.find(
+          (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
+        );
+      });
+    }
+
+    if (startdate === null) {
+      result = result;
+    } else if (startdate != null) {
+      result = result.filter(
+        (value) => startdate <= value.departureDate.slice(0, 10)
+      );
+    }
+
+    if (enddate === null) {
+      result = result;
+    } else if (enddate != null) {
+      result = result.filter(
+        (value) => enddate >= value.departureDate.slice(0, 10)
       );
     }
 

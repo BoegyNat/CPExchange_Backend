@@ -192,6 +192,46 @@ exports.getAllDriverBookingByIdUser = async (req, res) => {
   }
 };
 
+exports.getDriverBookingByIdDriver = async (req, res) => {
+  try {
+    const row = await pool.query(
+      "SELECT * FROM DriverBooking WHERE idDriver = ?",
+      [req.params.idDriver]
+    );
+
+    const driver = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
+      req.params.idDriver,
+    ]);
+
+    for (let booking of row) {
+      if (booking.idUser !== null) {
+        try {
+          const User = await pool.query(
+            "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ? AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
+            [booking.idUser]
+          );
+
+          booking.driver = driver[0];
+          booking.user = User[0];
+        } catch (error) {
+          console.error(
+            `Error fetching user for booking with id ${booking.idUser}:`,
+            error
+          );
+        }
+      }
+    }
+
+    if (row.length > 0) {
+      res.status(200).send(row);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
 exports.getDriverBookingByIdUserForRating = async (req, res) => {
   try {
     let row = await pool.query("SELECT * FROM DriverBooking WHERE idUser = ?", [
@@ -352,6 +392,72 @@ exports.getDriverBookingByFilterByIdUser = async (req, res) => {
 
         booking.user = User[0];
       });
+    }
+    if (result) {
+      return res.status(200).send(result);
+    } else {
+      return res.status(200).send(result);
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getDriverBookingByFilterByIdDriver = async (req, res) => {
+  try {
+    console.log(req.body);
+    const { name, enddate, startdate, idDriver } = req.body;
+
+    let result;
+    if (name === "") {
+      result = await pool.query(
+        "SELECT * FROM DriverBooking WHERE idDriver =  ?",
+        [idDriver]
+      );
+    } else {
+      result = await pool.query(
+        `SELECT  * FROM DriverBooking WHERE
+      LOWER(DriverBooking.nameUser) LIKE '%${name.toLowerCase()}%' AND idDriver = ?`,
+        [idDriver]
+      );
+    }
+
+    if (startdate === null) {
+      result = result;
+    } else if (startdate != null) {
+      result = result.filter(
+        (value) => startdate <= value.startDate.slice(0, 10)
+      );
+    }
+
+    if (enddate === null) {
+      result = result;
+    } else if (enddate != null) {
+      result = result.filter((value) => enddate >= value.endDate.slice(0, 10));
+    }
+
+    if (result.length > 0) {
+      const driver = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
+        idDriver,
+      ]);
+      for (let booking of result) {
+        if (booking.idUser !== null) {
+          try {
+            const User = await pool.query(
+              "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ? AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
+              [booking.idUser]
+            );
+
+            booking.driver = driver[0];
+            booking.user = User[0];
+          } catch (error) {
+            console.error(
+              `Error fetching user for booking with id ${booking.idUser}:`,
+              error
+            );
+          }
+        }
+      }
     }
     if (result) {
       return res.status(200).send(result);

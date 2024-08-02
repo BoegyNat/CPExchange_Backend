@@ -60,4 +60,9 @@ module.exports = function (app) {
     // [authJwt.verifyToken],
     DeliverySampleshuttleController.postDeleteDeliverySampleShuttle
   );
+  app.post(
+    "/api/get_delivery_sample_shuttle_by_filter_by_id_driver",
+    // [authJwt.verifyToken],
+    DeliverySampleshuttleController.getDeliverySampleShuttleByFilterByIdDriver
+  );
 };

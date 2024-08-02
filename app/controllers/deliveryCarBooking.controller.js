@@ -51,6 +51,22 @@ exports.getDeliveryCarBookingByIdUser = async (req, res) => {
   }
 };
 
+exports.getDeliveryCarBookingByIdDriver = async (req, res) => {
+  try {
+    const row = await pool.query(
+      "SELECT * FROM DeliveryCarBooking WHERE idDriver = ?",
+      [req.params.idDriver]
+    );
+    if (row.length > 0) {
+      res.status(200).send(row);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
 exports.getDeliveryCarBookingByIdUserForRating = async (req, res) => {
   try {
     let row = await pool.query(
@@ -322,6 +338,47 @@ exports.getDeliveryCarBookingByFilter = async (req, res) => {
       result = result;
     } else if (startdate != null) {
       result = result.filter((value) => startdate === value.date.slice(0, 10));
+    }
+    if (result) {
+      res.status(200).send(result);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getDeliveryCarBookingByFilterByIdDriver = async (req, res) => {
+  try {
+    const { name, enddate, startdate, idDriver } = req.body;
+    let result;
+    if (name === "") {
+      result = await pool.query(
+        "SELECT * FROM DeliveryCarBooking WHERE idDriver = ?",
+        [idDriver]
+      );
+    } else {
+      result = await pool.query(
+        `SELECT  * FROM DeliveryCarBooking WHERE
+                      LOWER(DeliveryCarBooking.name) LIKE '%${name.toLowerCase()}%' AND idDriver = ?`,
+        [idDriver]
+      );
+    }
+
+    if (enddate === null) {
+      result = result;
+    } else if (enddate != null) {
+      result = result.filter(
+        (value) =>
+          enddate >= value.date.slice(0, 10) ||
+          enddate === value.date.slice(0, 10)
+      );
+    }
+    if (startdate === null) {
+      result = result;
+    } else if (startdate != null) {
+      result = result.filter((value) => startdate <= value.date.slice(0, 10));
     }
     if (result) {
       res.status(200).send(result);

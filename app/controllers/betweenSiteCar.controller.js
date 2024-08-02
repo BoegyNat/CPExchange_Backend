@@ -8,6 +8,8 @@ const pool = require("../connection.js");
 const axios = require("axios");
 const dayjs = require("dayjs");
 
+dayjs.locale("th");
+
 const GOOGLE_MAPS_API_KEY = "AIzaSyBOI0pcf56o-9yK_XoUxhZ3IOCulmr89T8";
 
 exports.getAllBetweenSiteCars = async (req, res) => {
@@ -104,6 +106,22 @@ exports.CancelCallCar = async (req, res) => {
   }
 };
 
+exports.setFinishCallCar = async (req, res) => {
+  try {
+    const row = await pool.query(
+      "UPDATE BetweenSiteCar SET isFinish = ? WHERE idBetweenSiteCar = ? AND isFinish = ?",
+      [true, req.body.id, false]
+    );
+    if (row) {
+      res.status(200).send(row);
+    } else {
+      res.status(404).send("Not Found This Id");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
 exports.AcceptPassenger = (req, res) => {
   try {
     let index = BetweenSiteCars.find(
@@ -117,21 +135,59 @@ exports.AcceptPassenger = (req, res) => {
   }
 };
 
-exports.getBetweenSiteCarByIdDriver = (req, res) => {
+exports.getBetweenSiteCarByIdDriver = async (req, res) => {
   try {
-    let result = BetweenSiteCars.find(
-      (calling) => calling.id == req.params.idDriver
+    let result = await pool.query(
+      "SELECT * FROM BetweenSiteCar WHERE BetweenSiteCar.idDriverRouteDay = ?",
+      [req.params.idDriver]
     );
-    if (result) {
-      let User = Users.find((user) => user.Id == result.idUser);
-      result.firstname = User.firstname;
-      result.lastName = User.lastname;
-      result.vehicle = Vehicles.find(
-        (vehicle) => vehicle.idVehicle == result.idVehicle
+
+    if (result.length > 0) {
+      const Drivers = await pool.query(
+        "SELECT * FROM Driver LEFT JOIN Users ON Driver.idUser = Users.idUser WHERE Users.idUser = ?",
+        [req.params.idDriver]
       );
-      result.vehicleTypes = VehicleTypes.find(
-        (type) => type.id == result.vehicle.idVehicleType
+
+      const Vehicles = await pool.query(
+        "SELECT * FROM Vehicle JOIN VehicleBrandsAndModels ON Vehicle.idVehicleBrandAndModel = VehicleBrandsAndModels.idVehicleBrandsAndModels LEFT JOIN VehicleTypes ON Vehicle.idVehicleType = VehicleTypes.idVehicleTypes WHERE idVehicle = ?",
+        [Drivers[0].idVehicle]
       );
+
+      for (let booking of result) {
+        if (booking.idUser !== null) {
+          try {
+            const User = await pool.query(
+              "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ? AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
+              [booking.idUser]
+            );
+            const fromPlace = await pool.query(
+              "SELECT * FROM ScgSite WHERE idScgSite = ?",
+              [booking.gettingPlace]
+            );
+            const toPlace = await pool.query(
+              "SELECT * FROM ScgSite WHERE idScgSite = ?",
+              [booking.toPlace]
+            );
+            booking.fromPlaceName =
+              fromPlace[0].noSite !== null
+                ? `Site${fromPlace[0].noSite}: ${fromPlace[0].nameSite}`
+                : `${fromPlace[0].nameSite}`;
+            booking.toPlaceName =
+              toPlace[0].noSite !== null
+                ? `Site${toPlace[0].noSite}: ${toPlace[0].nameSite}`
+                : `${toPlace[0].nameSite}`;
+            booking.user = User[0];
+          } catch (error) {
+            console.error(
+              `Error fetching user for booking with id ${booking.idUser}:`,
+              error
+            );
+          }
+        }
+        booking.driver = Drivers[0];
+        booking.vehicle = Vehicles[0];
+      }
+
       res.status(200).send(result);
     } else {
       res.status(404).send("Not Found This Id");
@@ -159,10 +215,22 @@ exports.postNewBetweenSiteCar = async (req, res) => {
     const { toPlace, gettingPlace, idUser } = req.body;
 
     const data = await getNearestDriver(gettingPlace, toPlace);
-
+    const user = await pool.query(
+      "SELECT firstname_TH,lastname_TH FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+      [idUser]
+    );
     const result = await pool.query(
-      "INSERT INTO BetweenSiteCar (idUser, gettingPlace,toPlace,idDriverRouteDay,arrivedTime,isFinish) VALUES (?,?,?,?,?,?)",
-      [idUser, gettingPlace, toPlace, data.nearestDriverId, data.eta, false]
+      "INSERT INTO BetweenSiteCar (idUser,name, gettingPlace,toPlace,idDriverRouteDay,date,arrivedTime,isFinish) VALUES (?,?,?,?,?,?,?,?)",
+      [
+        idUser,
+        user[0].firstname_TH + " " + user[0].lastname_TH,
+        gettingPlace,
+        toPlace,
+        data.nearestDriverId,
+        new Date(),
+        data.eta,
+        false,
+      ]
     );
     if (result) {
       res.status(200).send({ result, data });
@@ -376,8 +444,11 @@ const getNearestDriver = async (getting, to) => {
       const durationText = element.duration.text; // ระยะเวลาในการเดินทาง (เช่น "1 hour 45 mins")
       const durationValue = element.duration.value; // ระยะเวลาในการเดินทางในหน่วยวินาที
       const currentTime = new Date();
+      console.log("currentTime", currentTime);
       const eta = new Date(currentTime.getTime() + durationValue * 1000);
+      console.log("eta", eta);
       const etaTimeString = dayjs(eta).format("HH:mm");
+      console.log("etaTimeString", etaTimeString);
 
       return {
         driver: driver[0],
@@ -478,8 +549,11 @@ const getNearestTime = async (getting, to, idUser) => {
       const durationText = element.duration.text; // ระยะเวลาในการเดินทาง (เช่น "1 hour 45 mins")
       const durationValue = element.duration.value; // ระยะเวลาในการเดินทางในหน่วยวินาที
       const currentTime = new Date();
+      console.log("cur : " + currentTime);
       const eta = new Date(currentTime.getTime() + durationValue * 1000);
+      console.log("eta : " + eta);
       const etaTimeString = dayjs(eta).format("HH:mm");
+      console.log("etaTimeString : " + etaTimeString);
 
       // const currentTime = dayjs();
       // const eta = dayjs(currentTime).add(durationValue * 1000, "s");
@@ -495,5 +569,89 @@ const getNearestTime = async (getting, to, idUser) => {
         eta: dayjs(eta).format("YYYY-MM-DD HH:mm:ss"),
       };
     }
+  }
+};
+
+exports.getBetweenSiteCarBookingByFilterByIdDriver = async (req, res) => {
+  const { name, startdate, enddate, idDriver } = req.body;
+  try {
+    let result;
+    if (name === "") {
+      result = await pool.query(
+        "SELECT * FROM BetweenSiteCar WHERE BetweenSiteCar.idDriverRouteDay = ?",
+        [idDriver]
+      );
+    } else {
+      result = await pool.query(
+        `SELECT  * FROM BetweenSiteCar WHERE
+                LOWER(BetweenSiteCar.name) LIKE '%${name.toLowerCase()}%' AND idDriverRouteDay = ?`,
+        [idDriver]
+      );
+    }
+
+    if (startdate && enddate) {
+      result = result.filter(
+        (value) =>
+          startdate <= value.date.slice(0, 10) &&
+          enddate >= value.date.slice(0, 10)
+      );
+    } else if (startdate) {
+      result = result.filter((value) => startdate <= value.date.slice(0, 10));
+    } else if (enddate) {
+      result = result.filter((value) => enddate >= value.date.slice(0, 10));
+    }
+
+    if (result.length > 0) {
+      const Drivers = await pool.query(
+        "SELECT * FROM Driver LEFT JOIN Users ON Driver.idUser = Users.idUser WHERE Users.idUser = ?",
+        [idDriver]
+      );
+
+      const Vehicles = await pool.query(
+        "SELECT * FROM Vehicle JOIN VehicleBrandsAndModels ON Vehicle.idVehicleBrandAndModel = VehicleBrandsAndModels.idVehicleBrandsAndModels LEFT JOIN VehicleTypes ON Vehicle.idVehicleType = VehicleTypes.idVehicleTypes WHERE idVehicle = ?",
+        [Drivers[0].idVehicle]
+      );
+
+      for (let booking of result) {
+        if (booking.idUser !== null) {
+          try {
+            const User = await pool.query(
+              "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ? AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
+              [booking.idUser]
+            );
+            const fromPlace = await pool.query(
+              "SELECT * FROM ScgSite WHERE idScgSite = ?",
+              [booking.gettingPlace]
+            );
+            const toPlace = await pool.query(
+              "SELECT * FROM ScgSite WHERE idScgSite = ?",
+              [booking.toPlace]
+            );
+            booking.fromPlaceName =
+              fromPlace[0].noSite !== null
+                ? `Site${fromPlace[0].noSite}: ${fromPlace[0].nameSite}`
+                : `${fromPlace[0].nameSite}`;
+            booking.toPlaceName =
+              toPlace[0].noSite !== null
+                ? `Site${toPlace[0].noSite}: ${toPlace[0].nameSite}`
+                : `${toPlace[0].nameSite}`;
+            booking.user = User[0];
+          } catch (error) {
+            console.error(
+              `Error fetching user for booking with id ${booking.idUser}:`,
+              error
+            );
+          }
+        }
+        booking.driver = Drivers[0];
+        booking.vehicle = Vehicles[0];
+      }
+
+      res.status(200).send(result);
+    } else {
+      res.status(404).send("Not Found This Id");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
   }
 };

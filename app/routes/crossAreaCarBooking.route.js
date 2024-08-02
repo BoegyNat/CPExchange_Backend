@@ -29,6 +29,12 @@ module.exports = function (app) {
   );
 
   app.get(
+    "/api/cross_area_car_booking_byIdDriver/:idDriver",
+    [authJwt.verifyToken],
+    crossAreaCarBookingController.getCrossAreaCarBookingByIdDriver
+  );
+
+  app.get(
     "/api/cross_area_car_booking_byIdUser_ForRating/:idUser",
     [authJwt.verifyToken],
     crossAreaCarBookingController.getCrossAreaCarBookingByIdUserForRating
@@ -78,5 +84,10 @@ module.exports = function (app) {
     "/api/cross_area_car_booking_ByFilter",
     [authJwt.verifyToken],
     crossAreaCarBookingController.getAllCrossAreaCarBookingsByFilter
+  );
+  app.post(
+    "/api/cross_area_car_booking_ByFilter_byIdDriver",
+    [authJwt.verifyToken],
+    crossAreaCarBookingController.getAllCrossAreaCarBookingsByFilterByIdDriver
   );
 };

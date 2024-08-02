@@ -84,6 +84,29 @@ exports.getDeliverySampleshuttleByIdDriver = async (req, res) => {
     [req.params.IdDriver]
   );
   for (let i = 0; i < rows.length; i++) {
+    if (rows[i].idDriver) {
+      const driver = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
+        rows[i].idDriver,
+      ]);
+      rows[i].driver = driver[0];
+    } else {
+      rows[i].driver = null;
+    }
+    const User = await pool.query(
+      "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ? AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
+      [rows[i].idUser]
+    );
+    rows[i].user = User[0];
+    if (rows[i].idSender) {
+      const Sender = await pool.query(
+        "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ? AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
+        [rows[i].idRecipient]
+      );
+      rows[i].sender = Sender[0];
+    } else {
+      rows[i].sender = null;
+    }
+
     const fromPlace = await pool.query(
       "SELECT * FROM ScgSite WHERE idScgSite = ?",
       [rows[i].fromPlace]
@@ -316,18 +339,14 @@ exports.postUpdateDeliveryStatus = async (req, res) => {
 
   if (check[0].status == "รอรับสินค้า") {
     const rows = await pool.query(
-      "UPDATE DeliverySampleShuttle SET  status = ? WHERE idDeliverySampleShuttle = ? ",
-      ["รับสินค้าเรียบร้อย", req.body.newData.id]
-    );
-    const field = await pool.query(
-      "UPDATE DeliverySampleShuttle SET  idDriver = ? WHERE idDeliverySampleShuttle = ? ",
-      [req.body.newData.idDriver, req.body.newData.id]
+      "UPDATE DeliverySampleShuttle SET  status = ?, idDriver = ? WHERE idDeliverySampleShuttle = ? ",
+      ["รับสินค้าเรียบร้อย", req.body.newData.idDriver, req.body.newData.id]
     );
     return res.status(200).send({ type: "success", msg: "update success" });
   } else if (check[0].status == "รับสินค้าเรียบร้อย") {
     const rows = await pool.query(
-      "UPDATE DeliverySampleShuttle SET status = ? WHERE idDeliverySampleShuttle = ? ",
-      ["ส่งสินค้าเรียบร้อย", req.body.newData.id]
+      "UPDATE DeliverySampleShuttle SET sendDate = ? ,status = ? WHERE idDeliverySampleShuttle = ? ",
+      [new Date(), "ส่งสินค้าเรียบร้อย", req.body.newData.id]
     );
     return res.status(200).send({ type: "success", msg: "update success" });
   } else {
@@ -411,6 +430,48 @@ exports.getDeliverySampleShuttleByFilter = async (req, res) => {
           enddate > value.date.slice(0, 10) ||
           enddate === value.date.slice(0, 10)
       );
+    }
+    for (let i = 0; i < result.length; i++) {
+      if (result[i].idDriver) {
+        const driver = await pool.query(
+          "SELECT * FROM Users WHERE idUser = ?",
+          [result[i].idDriver]
+        );
+        result[i].driver = driver[0];
+      } else {
+        result[i].driver = null;
+      }
+      const User = await pool.query(
+        "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ? AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
+        [result[i].idUser]
+      );
+      result[i].user = User[0];
+      if (result[i].idSender) {
+        const Sender = await pool.query(
+          "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ? AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
+          [result[i].idRecipient]
+        );
+        result[i].sender = Sender[0];
+      } else {
+        result[i].sender = null;
+      }
+
+      const fromPlace = await pool.query(
+        "SELECT * FROM ScgSite WHERE idScgSite = ?",
+        [result[i].fromPlace]
+      );
+      const toPlace = await pool.query(
+        "SELECT * FROM ScgSite WHERE idScgSite = ?",
+        [result[i].toPlace]
+      );
+      result[i].fromPlaceName =
+        fromPlace[0].noSite !== null
+          ? `Site${fromPlace[0].noSite}: ${fromPlace[0].nameSite}`
+          : `${fromPlace[0].nameSite}`;
+      result[i].toPlaceName =
+        toPlace[0].noSite !== null
+          ? `Site${toPlace[0].noSite}: ${toPlace[0].nameSite}`
+          : `${toPlace[0].nameSite}`;
     }
     const final_result = await getUrlFormPath(result, 6);
     if (result.length > 0) {
@@ -644,6 +705,111 @@ exports.postDeleteDeliverySampleShuttle = async (req, res) => {
       return res
         .status(200)
         .send({ type: "no success", msg: "no data", data: { result } });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getDeliverySampleShuttleByFilterByIdDriver = async (req, res) => {
+  try {
+    const { name, startdate, enddate, idDriver } = req.body;
+    // console.log(nameSample, fromSite, toSite, status, startdate, enddate);
+    let result;
+    if (name === "") {
+      result = await pool.query(
+        "SELECT * FROM DeliverySampleShuttle WHERE idDriver = ?",
+        [idDriver]
+      );
+    } else {
+      result = await pool.query(
+        `SELECT  * FROM DeliverySampleShuttle WHERE
+      LOWER(DeliverySampleShuttle.nameSender) LIKE '%${name.toLowerCase()}%' AND idDriver = ?`,
+        [idDriver]
+      );
+    }
+
+    if (startdate === null && enddate === null) {
+      result = result;
+    } else if (startdate != null && enddate === null) {
+      result = result.filter(
+        (value) =>
+          startdate < value.date.slice(0, 10) ||
+          startdate === value.date.slice(0, 10)
+      );
+    } else if (startdate != null && enddate != null) {
+      result = result.filter(
+        (value) =>
+          startdate < value.date.slice(0, 10) ||
+          startdate === value.date.slice(0, 10)
+      );
+      result = result.filter(
+        (value) =>
+          enddate > value.date.slice(0, 10) ||
+          enddate === value.date.slice(0, 10)
+      );
+    } else if (startdate === null && enddate != null) {
+      console.log("in");
+      result = result.filter(
+        (value) =>
+          enddate > value.date.slice(0, 10) ||
+          enddate === value.date.slice(0, 10)
+      );
+    }
+    for (let i = 0; i < result.length; i++) {
+      if (result[i].idDriver) {
+        const driver = await pool.query(
+          "SELECT * FROM Users WHERE idUser = ?",
+          [result[i].idDriver]
+        );
+        result[i].driver = driver[0];
+      } else {
+        result[i].driver = null;
+      }
+      const User = await pool.query(
+        "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ? AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
+        [result[i].idUser]
+      );
+      result[i].user = User[0];
+      if (result[i].idSender) {
+        const Sender = await pool.query(
+          "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ? AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
+          [result[i].idRecipient]
+        );
+        result[i].sender = Sender[0];
+      } else {
+        result[i].sender = null;
+      }
+
+      const fromPlace = await pool.query(
+        "SELECT * FROM ScgSite WHERE idScgSite = ?",
+        [result[i].fromPlace]
+      );
+      const toPlace = await pool.query(
+        "SELECT * FROM ScgSite WHERE idScgSite = ?",
+        [result[i].toPlace]
+      );
+      result[i].fromPlaceName =
+        fromPlace[0].noSite !== null
+          ? `Site${fromPlace[0].noSite}: ${fromPlace[0].nameSite}`
+          : `${fromPlace[0].nameSite}`;
+      result[i].toPlaceName =
+        toPlace[0].noSite !== null
+          ? `Site${toPlace[0].noSite}: ${toPlace[0].nameSite}`
+          : `${toPlace[0].nameSite}`;
+    }
+
+    console.log(result);
+    const final_result = await getUrlFormPath(result, 6);
+    console.log(final_result);
+    if (final_result.length > 0) {
+      return res
+        .status(200)
+        .send({ type: "success", msg: "have data", data: final_result });
+    } else {
+      return res
+        .status(200)
+        .send({ type: "no success", msg: "no data", data: {} });
     }
   } catch (error) {
     res.status(500).send({ message: error.message });

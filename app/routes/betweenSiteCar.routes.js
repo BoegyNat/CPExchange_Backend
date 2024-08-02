@@ -35,13 +35,25 @@ module.exports = function (app) {
   );
 
   app.post(
+    "/api/set_finish_call_car",
+    [authJwt.verifyToken],
+    betweenSiteCarController.setFinishCallCar
+  );
+
+  app.post(
     "/api/cancel_between_site_car/:idUser",
     [authJwt.verifyToken],
     betweenSiteCarController.CancelCallCar
   );
 
+  app.post(
+    "/api/between_site_car_filter_by_id_driver",
+    [authJwt.verifyToken],
+    betweenSiteCarController.getBetweenSiteCarBookingByFilterByIdDriver
+  );
+
   app.get(
-    "/api/between_site_car/:idDriver",
+    "/api/between_site_car_by_driver/:idDriver",
     [authJwt.verifyToken],
     betweenSiteCarController.getBetweenSiteCarByIdDriver
   );

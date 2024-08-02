@@ -94,6 +94,44 @@ exports.getCrossAreaCarBookingByIdUser = async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 };
+
+exports.getCrossAreaCarBookingByIdDriver = async (req, res) => {
+  try {
+    let row = await pool.query(
+      "SELECT * FROM CrossAreaCarBooking WHERE idDriver = ?",
+      [req.params.idDriver]
+    );
+    if (row.length > 0) {
+      for (const booking of row) {
+        booking.user = await pool.query(
+          "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+          [booking.idUser]
+        );
+
+        booking.vehicleBrandsAndModels = await pool.query(
+          "SELECT * FROM VehicleBrandsAndModels WHERE idVehicleBrandsAndModels = ?",
+          [booking.idVehicleBrandAndModel]
+        );
+
+        booking.vehicleTypes = await pool.query(
+          "SELECT * FROM VehicleTypes WHERE idVehicleTypes = ?",
+          [booking.idTypeCar]
+        );
+
+        booking.passengers = await pool.query(
+          "SELECT * FROM CrossAreaCarPassenger WHERE idCrossAreaCar = ?",
+          [booking.idCrossAreaCarBooking]
+        );
+      }
+
+      res.status(200).send(row);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
 exports.getCrossAreaCarBookingByIdUserForRating = async (req, res) => {
   try {
     let row = await pool.query(
@@ -532,6 +570,86 @@ exports.getAllCrossAreaCarBookingsByFilter = async (req, res) => {
 
     if (result) {
       res.status(200).send(result);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getAllCrossAreaCarBookingsByFilterByIdDriver = async (req, res) => {
+  try {
+    const { name, startdate, enddate, idDriver } = req.body;
+    let row;
+    if (name === "") {
+      row = await pool.query(
+        "SELECT * FROM CrossAreaCarBooking WHERE idDriver = ?",
+        [idDriver]
+      );
+    } else {
+      row = await pool.query(
+        `SELECT  * FROM CrossAreaCarBooking WHERE
+          LOWER(CrossAreaCarBooking.name) LIKE '%${name.toLowerCase()}%' AND idDriver`,
+        [idDriver]
+      );
+    }
+
+    if (startdate === null && enddate === null) {
+      row = row;
+    } else if (startdate != null && enddate != null) {
+      row = row.filter((value) => {
+        if (
+          startdate <= value.departureDate.slice(0, 10) &&
+          enddate >= value.departureDate.slice(0, 10)
+        ) {
+          return value;
+        }
+      });
+    } else if (startdate != null && enddate === null) {
+      row = row.filter((value) => {
+        if (startdate <= value.departureDate.slice(0, 10)) {
+          return value;
+        }
+      });
+    } else if (startdate === null && enddate != null) {
+      row = row.filter((value) => {
+        if (enddate >= value.departureDate.slice(0, 10)) {
+          return value;
+        }
+      });
+    }
+    if (row.length > 0) {
+      const VehicleBrandsAndModels = await pool.query(
+        "SELECT * FROM VehicleBrandsAndModels"
+      );
+      const VehicleTypes = await pool.query("SELECT * FROM VehicleTypes");
+
+      for (const booking of row) {
+        const User = await pool.query(
+          "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+          [booking.idUser]
+        );
+        booking.user = User[0];
+
+        booking.vehicleBrandsAndModels = VehicleBrandsAndModels.find(
+          (vehicle) =>
+            vehicle.idVehicleBrandsAndModels == booking.idVehicleBrandAndModel
+        );
+
+        booking.vehicleTypes = VehicleTypes.find(
+          (type) => type.idVehicleTypes == booking.idTypeCar
+        );
+
+        booking.passengers = await pool.query(
+          "SELECT * FROM CrossAreaCarPassenger WHERE idCrossAreaCar = ?",
+          [booking.idCrossAreaCarBooking]
+        );
+      }
+    }
+
+    if (row) {
+      res.status(200).send(row);
     } else {
       res.status(404).send("Not Found Booking");
     }

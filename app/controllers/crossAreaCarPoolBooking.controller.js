@@ -38,18 +38,6 @@ exports.getCrossAreaCarPoolBookingByIdUser = async (req, res) => {
       "SELECT * FROM CrossAreaCarPoolBookingPassenger"
     );
 
-    // let result = CrossAreaCarPoolBookings.filter(booking => {
-    //     if(booking.idUser == req.params.idUser){
-    //         return true;
-    //     }else{
-    //         let passenger = CrossAreaCarPoolBookingPassengers.find(passenger => passenger.idCrossAreaCarPoolBooking == booking.id && passenger.idUser == req.params.idUser);
-    //         if(passenger){
-    //             return true;
-    //         }else{
-    //             return false;
-    //         }
-    //     }
-    // });
     if (row.length > 0) {
       row.map((booking) => {
         booking.passengers = rows.filter(
@@ -61,6 +49,45 @@ exports.getCrossAreaCarPoolBookingByIdUser = async (req, res) => {
       res.status(200).send(row);
     } else {
       res.status(404).send("Not Found Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getCrossAreaCarPoolBookingByIdDriver = async (req, res) => {
+  try {
+    const routes = await pool.query(
+      "SELECT DISTINCT routeLine FROM routeCrossAreaCarPools WHERE idDriver = ?",
+      [req.params.idDriver]
+    );
+
+    if (routes.length > 0) {
+      const rows = await pool.query(
+        "SELECT * FROM CrossAreaCarPoolBookingPassenger"
+      );
+
+      let row = [];
+      for (const route of routes) {
+        const booking = await pool.query(
+          "SELECT * FROM CrossAreaCarPoolBooking WHERE idCrossAreaCarPoolBooking = ?",
+          [route.routeLine]
+        );
+        row.push(booking[0]);
+      }
+
+      if (row.length > 0) {
+        row.map((booking) => {
+          booking.passengers = rows.filter(
+            (passenger) =>
+              passenger.idCrossAreaCarPoolBooking ==
+              booking.idCrossAreaCarPoolBooking
+          );
+        });
+        res.status(200).send(row);
+      } else {
+        res.status(404).send("Not Found Booking");
+      }
     }
   } catch (error) {
     res.status(500).send({ message: error.message });
@@ -312,6 +339,81 @@ exports.getCrossAreaCarPoolBookingByFilter = async (req, res) => {
       res.status(200).send(result);
     } else {
       res.status(404).send("Not Found Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getCrossAreaCarPoolBookingByFilterByIdDriver = async (req, res) => {
+  try {
+    const { name, startdate, enddate, idDriver } = req.body;
+    const routes = await pool.query(
+      "SELECT DISTINCT routeLine FROM routeCrossAreaCarPools WHERE idDriver = ?",
+      [idDriver]
+    );
+
+    if (routes.length > 0) {
+      const rows = await pool.query(
+        "SELECT * FROM CrossAreaCarPoolBookingPassenger"
+      );
+
+      let row = [];
+      if (name === "") {
+        for (const route of routes) {
+          const booking = await pool.query(
+            "SELECT * FROM CrossAreaCarPoolBooking WHERE idCrossAreaCarPoolBooking = ?",
+            [route.routeLine]
+          );
+          row.push(booking[0]);
+        }
+      } else {
+        for (const route of routes) {
+          const booking = await pool.query(
+            `SELECT  * FROM CrossAreaCarPoolBooking WHERE
+          LOWER(CrossAreaCarPoolBooking.name) LIKE '%${name.toLowerCase()}%' AND idCrossAreaCarPoolBooking = ?`,
+            [route.routeLine]
+          );
+          row.push(booking[0]);
+        }
+      }
+      if (startdate === null && enddate === null) {
+        row = row;
+      } else if (startdate != null && enddate != null) {
+        row = row.filter((value) => {
+          if (
+            startdate <= value.departureDate.slice(0, 10) &&
+            enddate >= value.departureDate.slice(0, 10)
+          ) {
+            return value;
+          }
+        });
+      } else if (startdate != null && enddate === null) {
+        row = row.filter((value) => {
+          if (startdate <= value.departureDate.slice(0, 10)) {
+            return value;
+          }
+        });
+      } else if (startdate === null && enddate != null) {
+        row = row.filter((value) => {
+          if (enddate >= value.departureDate.slice(0, 10)) {
+            return value;
+          }
+        });
+      }
+
+      if (row.length > 0) {
+        row.map((booking) => {
+          booking.passengers = rows.filter(
+            (passenger) =>
+              passenger.idCrossAreaCarPoolBooking ==
+              booking.idCrossAreaCarPoolBooking
+          );
+        });
+        res.status(200).send(row);
+      } else {
+        res.status(404).send("Not Found Booking");
+      }
     }
   } catch (error) {
     res.status(500).send({ message: error.message });
