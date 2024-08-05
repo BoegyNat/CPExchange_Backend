@@ -75,15 +75,16 @@ exports.getInAreaCarBookingByIdDriver = async (req, res) => {
 
     if (row.length > 0) {
       for (const booking of row) {
-        booking.vehicleBrandsAndModels = await pool.query(
+        const vehicleBrandsAndModels = await pool.query(
           "SELECT * FROM VehicleBrandsAndModels WHERE idVehicleBrandsAndModels = ?",
           [booking.idVehicleBrandAndModel]
         );
-
-        booking.vehicleTypes = await pool.query(
+        booking.vehicleBrandsAndModels = vehicleBrandsAndModels[0];
+        const vehicleType = await pool.query(
           "SELECT * FROM VehicleTypes WHERE idVehicleTypes = ?",
           [booking.idTypeCar]
         );
+        booking.vehicleTypes = vehicleType[0];
       }
       res.status(200).send(row);
     } else {
@@ -494,6 +495,9 @@ exports.getInAreaCarBookingByFilterByIdDriver = async (req, res) => {
     const { name, enddate, startdate, idDriver } = req.body;
     let result;
     const VehicleType = await pool.query("SELECT * FROM VehicleTypes");
+    const VehicleBrandsAndModels = await pool.query(
+      "SELECT * FROM VehicleBrandsAndModels"
+    );
     if (name === "") {
       result = await pool.query(
         "SELECT * FROM inAreaCarBooking  WHERE idDriver = ?",
@@ -503,6 +507,13 @@ exports.getInAreaCarBookingByFilterByIdDriver = async (req, res) => {
       result.map((booking) => {
         booking.vehicleTypes = VehicleType.find(
           (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
+        );
+      });
+
+      result.map((booking) => {
+        booking.vehicleBrandsAndModels = VehicleBrandsAndModels.find(
+          (vehibrand) =>
+            vehibrand.idVehicleBrandsAndModels == booking.idVehicleBrandAndModel
         );
       });
     } else {
@@ -515,6 +526,12 @@ exports.getInAreaCarBookingByFilterByIdDriver = async (req, res) => {
       result.map((booking) => {
         booking.vehicleTypes = VehicleType.find(
           (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
+        );
+      });
+      result.map((booking) => {
+        booking.vehicleBrandsAndModels = VehicleBrandsAndModels.find(
+          (vehibrand) =>
+            vehibrand.idVehicleBrandsAndModels == booking.idVehicleBrandAndModel
         );
       });
     }

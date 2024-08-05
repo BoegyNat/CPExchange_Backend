@@ -33,12 +33,17 @@ exports.addLocationDriver = async (req, res) => {
   }
 };
 exports.getLocationDriverById = async (req, res) => {
-  const rows = await pool.query(
-    "SELECT * FROM LocationDriver WHERE idDriver = ? ORDER BY idLocationDriver DESC LIMIT 1",
-    [req.params.idDriver]
-  );
-
-  res.status(200).send(rows);
+  try {
+    const rows = await pool.query(
+      "SELECT * FROM LocationDriver WHERE idDriver = ? ORDER BY idLocationDriver DESC LIMIT 1",
+      [req.params.idDriver]
+    );
+    if (!rows) {
+      return res.status(404).send({ message: "Not found" });
+    } else return res.status(200).send(rows);
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
 };
 
 exports.getAllSite = async (req, res) => {

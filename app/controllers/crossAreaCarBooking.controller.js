@@ -108,15 +108,17 @@ exports.getCrossAreaCarBookingByIdDriver = async (req, res) => {
           [booking.idUser]
         );
 
-        booking.vehicleBrandsAndModels = await pool.query(
+        const VehicleBrandsAndModels = await pool.query(
           "SELECT * FROM VehicleBrandsAndModels WHERE idVehicleBrandsAndModels = ?",
           [booking.idVehicleBrandAndModel]
         );
+        booking.vehicleBrandsAndModels = VehicleBrandsAndModels[0];
 
-        booking.vehicleTypes = await pool.query(
+        const VehicleTypes = await pool.query(
           "SELECT * FROM VehicleTypes WHERE idVehicleTypes = ?",
           [booking.idTypeCar]
         );
+        booking.vehicleTypes = VehicleTypes[0];
 
         booking.passengers = await pool.query(
           "SELECT * FROM CrossAreaCarPassenger WHERE idCrossAreaCar = ?",
