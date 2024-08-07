@@ -791,29 +791,29 @@ exports.newTechnician = async (req, res) => {
     );
 
     // console.log(path.join(__dirname, `../image/maintenance/technician/${lastedTechnicianId}`));
-    if (
-      fs.existsSync(
-        path.join(
-          __dirname,
-          `../../image/maintenance/technician/${lastedTechnicianId}`
-        )
-      )
-    ) {
-      fs.rmSync(
-        path.join(
-          __dirname,
-          `../../image/maintenance/technician/${lastedTechnicianId}`
-        ),
-        { recursive: true, force: true }
-      );
-    }
-    fs.mkdirSync(
-      path.join(
-        __dirname,
-        `../../image/maintenance/technician/${lastedTechnicianId}`
-      )
-    );
-    fs.writeFileSync(avatarPath, file.buffer);
+    // if (
+    //   fs.existsSync(
+    //     path.join(
+    //       __dirname,
+    //       `../../image/maintenance/technician/${lastedTechnicianId}`
+    //     )
+    //   )
+    // ) {
+    //   fs.rmSync(
+    //     path.join(
+    //       __dirname,
+    //       `../../image/maintenance/technician/${lastedTechnicianId}`
+    //     ),
+    //     { recursive: true, force: true }
+    //   );
+    // }
+    // fs.mkdirSync(
+    //   path.join(
+    //     __dirname,
+    //     `../../image/maintenance/technician/${lastedTechnicianId}`
+    //   )
+    // );
+    // fs.writeFileSync(avatarPath, file.buffer);
     bucketService.uploadFile(
       `technician/${lastedTechnicianId}/${avatarName}`,
       file
