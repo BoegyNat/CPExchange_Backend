@@ -60,12 +60,12 @@ SELECT
       UniHR.Employees e 
       LEFT JOIN UniHR.Role r ON r.idRole = e.idRole 
     WHERE 
-      username = ?
+      username = ? OR email = ?
     LIMIT 
       1;
       
       `,
-        [username.toUpperCase()]
+        [username.toUpperCase(), username.toUpperCase()]
       )
 
       .then((rows) => {
