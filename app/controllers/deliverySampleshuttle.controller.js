@@ -60,8 +60,8 @@ exports.getDeliverySampleshuttleAll = async (req, res) => {
 
 exports.getDeliverySampleshuttleByIdUser = async (req, res) => {
   const rows = await pool.query(
-    "SELECT * FROM DeliverySampleShuttle WHERE idUser = ?",
-    [req.params.IdUser]
+    "SELECT * FROM DeliverySampleShuttle WHERE idUser = ? OR idRecipient = ?",
+    [req.params.IdUser, req.params.IdUser]
   );
   const result = await getUrlFormPath(rows, 2);
   return res.status(200).json(result);
@@ -366,14 +366,14 @@ exports.getDeliverySampleShuttleByFilter = async (req, res) => {
     let result;
     if (nameSample === "") {
       result = await pool.query(
-        "SELECT * FROM DeliverySampleShuttle WHERE idUser = ?",
-        [idUser]
+        "SELECT * FROM DeliverySampleShuttle WHERE idUser = ? OR idRecipient = ?",
+        [idUser, idUser]
       );
     } else {
       result = await pool.query(
         `SELECT  * FROM DeliverySampleShuttle WHERE
-      LOWER(DeliverySampleShuttle.nameSample) LIKE '%${nameSample.toLowerCase()}%' AND idUser = ?`,
-        [idUser]
+      LOWER(DeliverySampleShuttle.nameSample) LIKE '%${nameSample.toLowerCase()}%' AND (idUser = ? OR idRecipient = ?)`,
+        [idUser, idUser]
       );
     }
 

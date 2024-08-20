@@ -10,12 +10,25 @@ const bucketService = require("../../service/bucket");
 
 exports.getAllCaterings = async (req, res) => {
   try {
-    const { status } = req.query;
-    let result = await pool.query("SELECT * FROM CateringRequest");
-    // let result = [...Caterings].reverse();
-
-    if (status) {
-      result = result.filter((catering) => catering.status === status);
+    const { status, date } = req.body;
+    let result;
+    if (status && date) {
+      result = await pool.query(
+        "SELECT * FROM CateringRequest WHERE status = ? AND date = ?",
+        [status, date]
+      );
+    } else if (status) {
+      result = await pool.query(
+        "SELECT * FROM CateringRequest WHERE status = ?",
+        [status]
+      );
+    } else if (date) {
+      result = await pool.query(
+        "SELECT * FROM CateringRequest WHERE date = ?",
+        [date]
+      );
+    } else {
+      result = await pool.query("SELECT * FROM CateringRequest");
     }
     return res.status(200).send({
       success: true,
@@ -67,6 +80,10 @@ exports.getCateringById = async (req, res) => {
           parseInt(result[0].idCateringRequest) ===
           parseInt(o.idCateringRequest)
       ).reverse();
+      let cateringType = await pool.query(
+        "SELECT * FROM CateringType WHERE idCateringType = ?",
+        [parseInt(result[0].cateringType)]
+      );
       let AllFood = await pool.query("SELECT * FROM CateringFood");
       let AllRestaurant = await pool.query("SELECT * FROM CateringRestaurant");
       orderFoods = await Promise.all(
@@ -123,6 +140,7 @@ exports.getCateringById = async (req, res) => {
         success: true,
         data: {
           ...result[0],
+          cateringTypeName: cateringType[0].Type,
           orderFoods: orderFoods,
           totalPrice: totalPrice,
           requester: requester,
@@ -145,7 +163,7 @@ exports.getCateringById = async (req, res) => {
 
 exports.changeStatusById = async (req, res) => {
   try {
-    console.log(req.body, req.params.cateringId);
+    // console.log(req.body, req.params.cateringId);
     const { status } = req.body;
 
     if (
@@ -187,19 +205,26 @@ exports.getAllRestaurants = async (req, res) => {
 
     result = await Promise.all(
       result.map(async (value) => {
-        if (JSON.parse(value.image).length > 0) {
-          let datapath = await bucketService.getSignedUrl(
-            `catering/cateringRestaurant/${JSON.parse(value.image)[0].path}`
-          );
+        if (value.image) {
+          if (JSON.parse(value.image).length > 0) {
+            let datapath = await bucketService.getSignedUrl(
+              `catering/cateringRestaurant/${JSON.parse(value.image)[0].path}`
+            );
+            return {
+              ...value,
+              fileUrl: datapath,
+            };
+          }
           return {
             ...value,
-            fileUrl: datapath,
+            fileUrl: null,
+          };
+        } else {
+          return {
+            ...value,
+            fileUrl: null,
           };
         }
-        return {
-          ...value,
-          fileUrl: [],
-        };
       })
     );
     let AllFood = await pool.query("SELECT * FROM CateringFood");
@@ -214,14 +239,21 @@ exports.getAllRestaurants = async (req, res) => {
         if (foods.length > 0) {
           allfood = await Promise.all(
             foods.map(async (value, index) => {
-              if (JSON.parse(value.image).length > 0) {
-                let datapath = await bucketService.getSignedUrl(
-                  `catering/cateringFood/${JSON.parse(value.image)[0].path}`
-                );
-                return {
-                  ...value,
-                  fileUrl: datapath,
-                };
+              if (value.image) {
+                if (JSON.parse(value.image).length > 0) {
+                  let datapath = await bucketService.getSignedUrl(
+                    `catering/cateringFood/${JSON.parse(value.image)[0].path}`
+                  );
+                  return {
+                    ...value,
+                    fileUrl: datapath,
+                  };
+                } else {
+                  return {
+                    ...value,
+                    fileUrl: null,
+                  };
+                }
               } else {
                 return {
                   ...value,
@@ -278,14 +310,18 @@ exports.getRestaurantById = async (req, res) => {
         error: "not found",
       });
     }
-    if (JSON.parse(result.image).length > 0) {
-      result.fileUrl = await bucketService.getSignedUrl(
-        `catering/cateringRestaurant/${JSON.parse(result.image)[0].path}`
-      );
+    if (result.image) {
+      if (JSON.parse(result.image).length > 0) {
+        result.fileUrl = await bucketService.getSignedUrl(
+          `catering/cateringRestaurant/${JSON.parse(result.image)[0].path}`
+        );
+      } else {
+        result.fileUrl = null;
+      }
     } else {
-      result.fileUrl = [];
+      result.fileUrl = null;
     }
-    console.log(result);
+    // console.log(result);
     let allfood = [];
 
     let AllFood = await pool.query("SELECT * FROM CateringFood");
@@ -298,14 +334,21 @@ exports.getRestaurantById = async (req, res) => {
     if (foods.length > 0) {
       allfood = await Promise.all(
         foods.map(async (value, index) => {
-          if (JSON.parse(value.image).length > 0) {
-            let datapath = await bucketService.getSignedUrl(
-              `catering/cateringFood/${JSON.parse(value.image)[0].path}`
-            );
-            return {
-              ...value,
-              fileUrl: datapath,
-            };
+          if (value.image) {
+            if (JSON.parse(value.image).length > 0) {
+              let datapath = await bucketService.getSignedUrl(
+                `catering/cateringFood/${JSON.parse(value.image)[0].path}`
+              );
+              return {
+                ...value,
+                fileUrl: datapath,
+              };
+            } else {
+              return {
+                ...value,
+                fileUrl: null,
+              };
+            }
           } else {
             return {
               ...value,
@@ -328,16 +371,56 @@ exports.getRestaurantById = async (req, res) => {
     });
   }
 };
+exports.deleteRestaurantById = async (req, res) => {
+  try {
+    const restaurant = await pool.query(
+      "SELECT * FROM CateringRestaurant WHERE idCateringRestaurant = ?",
+      [req.params.restaurantId]
+    );
 
+    if (restaurant[0].image) {
+      const image = JSON.parse(restaurant[0].image);
+      bucketService.deleteFile(`catering/cateringRestaurant/${image[0].path}`);
+    }
+    const food = await pool.query(
+      "SELECT * FROM CateringFood WHERE idCateringRestaurant = ?",
+      [req.params.restaurantId]
+    );
+    for (let i = 0; i < food.length; i++) {
+      if (food[i].image) {
+        const image = JSON.parse(food[i].image);
+        bucketService.deleteFile(`catering/cateringFood/${image[0].path}`);
+      }
+    }
+    const deleteFood = await pool.query(
+      "DELETE FROM CateringFood WHERE idCateringRestaurant = ?",
+      [req.params.restaurantId]
+    );
+    const result = await pool.query(
+      "DELETE FROM CateringRestaurant WHERE idCateringRestaurant = ?",
+      [req.params.restaurantId]
+    );
+    return res.status(200).send({
+      success: true,
+      data: result,
+      error: null,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      error: error.message,
+    });
+  }
+};
 exports.addNewRestaurant = async (req, res) => {
   try {
-    const file = req.files.attachment;
-    const fileRes = req.files.resFile;
-    // console.log(
-    //   JSON.parse(req.body.Result),
-    //   req.files.resFile,
-    //   req.files.attachment
-    // );
+    const file = req.files?.attachment;
+    const fileRes = req.files?.resFile;
+    console.log(
+      // JSON.parse(req.body.Result),
+      req.files.resFile,
+      req.files.attachment
+    );
     // // console.log(req.body.length)
     const { nameRestaurant, categories, location, name, phone, email } =
       JSON.parse(req.body.Result).Restaurant.data;
@@ -367,43 +450,64 @@ exports.addNewRestaurant = async (req, res) => {
         parseInt(resultId[0].idCateringRestaurant) + 1;
     }
 
-    const avatarNameRes =
-      "unknow" +
-      "." +
-      fileRes[0].originalname.split(".")[
-        fileRes[0].originalname.split(".").length - 1
-      ];
-    bucketService.uploadFile(
-      `catering/cateringRestaurant/${lastedCateringRestaurantId}/${avatarNameRes}`,
-      fileRes[0]
-    );
-    const attachment = [];
+    let resultData;
+    if (fileRes !== null && fileRes !== undefined) {
+      const avatarNameRes =
+        "unknow" +
+        "." +
+        fileRes[0].originalname.split(".")[
+          fileRes[0].originalname.split(".").length - 1
+        ];
+      bucketService.uploadFile(
+        `catering/cateringRestaurant/${lastedCateringRestaurantId}/${avatarNameRes}`,
+        fileRes[0]
+      );
+      const attachment = [];
 
-    attachment.push({
-      // fileName: file.originalname,
-      path: `${lastedCateringRestaurantId}/${avatarNameRes}`,
-    });
+      attachment.push({
+        // fileName: file.originalname,
+        path: `${lastedCateringRestaurantId}/${avatarNameRes}`,
+      });
 
-    const resultData = await pool.query(
-      "INSERT INTO CateringRestaurant (nameRestaurant, categories, location,image, name, phone, email,locationfrommap, Lat, Lng) VALUES (?,?,?,?,?,?,?,?,?,?)",
-      [
-        nameRestaurant,
-        categories,
-        location,
-        JSON.stringify(attachment),
-        name,
-        phone,
-        email,
-        locationfrommap,
-        Lat,
-        Lng,
-      ]
-    );
+      resultData = await pool.query(
+        "INSERT INTO CateringRestaurant (nameRestaurant, categories, location,image, name, phone, email,locationfrommap, Lat, Lng) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        [
+          nameRestaurant,
+          categories,
+          location,
+          JSON.stringify(attachment),
+          name,
+          phone,
+          email,
+          locationfrommap,
+          Lat,
+          Lng,
+        ]
+      );
+    } else {
+      resultData = await pool.query(
+        "INSERT INTO CateringRestaurant (nameRestaurant, categories, location, name, phone, email,locationfrommap, Lat, Lng) VALUES (?,?,?,?,?,?,?,?,?)",
+        [
+          nameRestaurant,
+          categories,
+          location,
+          name,
+          phone,
+          email,
+          locationfrommap,
+          Lat,
+          Lng,
+        ]
+      );
+    }
 
     if (JSON.parse(req.body.Result).Menu.length > 0) {
+      let file_index = 0;
       for (let i = 0; i < JSON.parse(req.body.Result).Menu.length; i++) {
-        const { menuName, price, detail } = JSON.parse(req.body.Result).Menu[i];
-        console.log(menuName, price, detail);
+        const { menuName, price, detail, fileAdded } = JSON.parse(
+          req.body.Result
+        ).Menu[i];
+        // console.log(menuName, price, detail);
         const resultDataId = await pool.query(
           "SELECT * FROM CateringRestaurant ORDER BY idCateringRestaurant DESC LIMIT 1"
         );
@@ -418,38 +522,240 @@ exports.addNewRestaurant = async (req, res) => {
           lastedMaintenanceId =
             parseInt(resultDataId[0].idCateringRestaurant) + 1;
         }
-        console.log(lastedMaintenanceId);
-        const avatarName =
-          "unknow" +
-          i +
-          "." +
-          file[i].originalname.split(".")[
-            file[i].originalname.split(".").length - 1
-          ];
-        bucketService.uploadFile(
-          `catering/cateringFood/${lastedMaintenanceId}/${avatarName}`,
-          file[i]
-        );
-        const attachment = [];
+        // console.log(lastedMaintenanceId);
+        if (fileAdded) {
+          const avatarName =
+            "unknow" +
+            file_index +
+            "." +
+            file[file_index].originalname.split(".")[
+              file[file_index].originalname.split(".").length - 1
+            ];
+          bucketService.uploadFile(
+            `catering/cateringFood/${lastedMaintenanceId}/${avatarName}`,
+            file[file_index]
+          );
+          const attachment = [];
 
-        attachment.push({
-          // fileName: file.originalname,
-          path: `${lastedMaintenanceId}/${avatarName}`,
-        });
-        console.log(resultDataId[0].idRestaurant);
-        const res = await pool.query(
-          "INSERT INTO CateringFood (menuName, price,detail,image,idCateringRestaurant) VALUES (?,?,?,?,?)",
-          [
-            menuName,
-            price,
-            detail,
-            JSON.stringify(attachment),
-            resultDataId[0].idCateringRestaurant,
-          ]
-        );
+          attachment.push({
+            // fileName: file.originalname,
+            path: `${lastedMaintenanceId}/${avatarName}`,
+          });
+          // console.log(resultDataId[0].idRestaurant);
+          const res = await pool.query(
+            "INSERT INTO CateringFood (menuName, price,detail,image,idCateringRestaurant) VALUES (?,?,?,?,?)",
+            [
+              menuName,
+              price,
+              detail,
+              JSON.stringify(attachment),
+              resultDataId[0].idCateringRestaurant,
+            ]
+          );
+
+          file_index = file_index + 1;
+        } else {
+          const res = await pool.query(
+            "INSERT INTO CateringFood (menuName, price,detail,idCateringRestaurant) VALUES (?,?,?,?)",
+            [menuName, price, detail, resultDataId[0].idCateringRestaurant]
+          );
+        }
       }
     }
 
+    if (resultData) {
+      return res.status(200).send({
+        success: true,
+        data: resultData,
+        error: null,
+      });
+    }
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.updateRestaurantMenu = async (req, res) => {
+  try {
+    const file = req.files.attachment;
+    const fileRes = req.files.resFile;
+    // console.log(
+    //   JSON.parse(req.body.Result),
+    //   req.files.resFile,
+    //   req.files.attachment
+    // );
+    // console.log(req.body.length)
+    const {
+      nameRestaurant,
+      categories,
+      location,
+      name,
+      phone,
+      email,
+      idCateringRestaurant,
+    } = JSON.parse(req.body.Result).Restaurant.data;
+    const { locationfrommap, Lat, Lng } = JSON.parse(req.body.Result).Restaurant
+      .dataMap[0];
+    // console.log(
+    //   nameRestaurant,
+    //   categories,
+    //   location,
+    //   name,
+    //   phone,
+    //   email,
+    //   locationfrommap,
+    //   Lat,
+    //   Lng
+    // );
+    let resultData = null;
+    if (fileRes) {
+      const avatarNameRes =
+        "unknow" +
+        "." +
+        fileRes[0].originalname.split(".")[
+          fileRes[0].originalname.split(".").length - 1
+        ];
+      bucketService.uploadFile(
+        `catering/cateringRestaurant/${idCateringRestaurant}/${avatarNameRes}`,
+        fileRes[0]
+      );
+      const attachment = [];
+
+      attachment.push({
+        path: `${idCateringRestaurant}/${avatarNameRes}`,
+      });
+
+      resultData = await pool.query(
+        "UPDATE CateringRestaurant SET nameRestaurant = ?, categories = ?, location = ?, image = ?, name = ?, phone = ?, email = ?,locationfrommap = ?, Lat = ?, Lng = ? WHERE idCateringRestaurant = ?",
+        [
+          nameRestaurant,
+          categories,
+          location,
+          JSON.stringify(attachment),
+          name,
+          phone,
+          email,
+          locationfrommap,
+          Lat,
+          Lng,
+          idCateringRestaurant,
+        ]
+      );
+    } else {
+      resultData = await pool.query(
+        "UPDATE CateringRestaurant SET nameRestaurant = ?, categories = ?, location = ?, name = ?, phone = ?, email = ?,locationfrommap = ?, Lat = ?, Lng = ? WHERE idCateringRestaurant = ?",
+        [
+          nameRestaurant,
+          categories,
+          location,
+          name,
+          phone,
+          email,
+          locationfrommap,
+          Lat,
+          Lng,
+          idCateringRestaurant,
+        ]
+      );
+    }
+
+    if (JSON.parse(req.body.Result).deletedMenu.length > 0) {
+      for (let i = 0; i < JSON.parse(req.body.Result).deletedMenu.length; i++) {
+        const { idCateringFood, image } = JSON.parse(req.body.Result)
+          .deletedMenu[i];
+        const res = await pool.query(
+          "DELETE FROM CateringFood WHERE idCateringFood = ?",
+          [idCateringFood]
+        );
+        bucketService.deleteFile(`catering/cateringFood/${image}`);
+      }
+    }
+
+    if (JSON.parse(req.body.Result).Menu.length > 0) {
+      let file_index = 0;
+      for (let i = 0; i < JSON.parse(req.body.Result).Menu.length; i++) {
+        const { old } = JSON.parse(req.body.Result).Menu[i];
+        if (old) {
+          const { menuName, price, detail, idCateringFood, fileChanged } =
+            JSON.parse(req.body.Result).Menu[i];
+          if (fileChanged) {
+            const avatarName =
+              "unknow" +
+              file_index +
+              "." +
+              file[file_index].originalname.split(".")[
+                file[file_index].originalname.split(".").length - 1
+              ];
+            bucketService.uploadFile(
+              `catering/cateringFood/${idCateringRestaurant + 1}/${avatarName}`,
+              file[file_index]
+            );
+            const attachment = [];
+
+            attachment.push({
+              path: `${idCateringRestaurant + 1}/${avatarName}`,
+            });
+            const res = await pool.query(
+              "UPDATE CateringFood SET menuName = ?, price = ?, detail = ?, image = ? WHERE idCateringFood = ?",
+              [
+                menuName,
+                price,
+                detail,
+                JSON.stringify(attachment),
+                idCateringFood,
+              ]
+            );
+            file_index++;
+          } else {
+            const res = await pool.query(
+              "UPDATE CateringFood SET menuName = ?, price = ?, detail = ? WHERE idCateringFood = ?",
+              [menuName, price, detail, idCateringFood]
+            );
+          }
+        } else {
+          const { menuName, price, detail, fileAdded } = JSON.parse(
+            req.body.Result
+          ).Menu[i];
+          if (fileAdded) {
+            const avatarName =
+              "unknow" +
+              i +
+              "." +
+              file[file_index].originalname.split(".")[
+                file[file_index].originalname.split(".").length - 1
+              ];
+            bucketService.uploadFile(
+              `catering/cateringFood/${idCateringRestaurant + 1}/${avatarName}`,
+              file[file_index]
+            );
+            const attachment = [];
+
+            attachment.push({
+              path: `${idCateringRestaurant + 1}/${avatarName}`,
+            });
+            const res = await pool.query(
+              "INSERT INTO CateringFood (menuName, price,detail,image,idCateringRestaurant) VALUES (?,?,?,?,?)",
+              [
+                menuName,
+                price,
+                detail,
+                JSON.stringify(attachment),
+                idCateringRestaurant,
+              ]
+            );
+            file_index++;
+          } else {
+            const res = await pool.query(
+              "INSERT INTO CateringFood (menuName, price,detail,idCateringRestaurant) VALUES (?,?,?,?)",
+              [menuName, price, detail, idCateringRestaurant]
+            );
+          }
+        }
+      }
+    }
     if (resultData) {
       return res.status(200).send({
         success: true,
