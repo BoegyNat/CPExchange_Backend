@@ -73,9 +73,19 @@ module.exports = function (app) {
     [authJwt.verifyToken],
     cateringController.addRequestCatering
   );
+  app.post(
+    "/api/catering/updateCostRequestCatering",
+    [authJwt.verifyToken],
+    cateringController.updateCostRequestCatering
+  );
   app.get(
     "/api/catering/getCateringRestaurantType",
     [authJwt.verifyToken],
     cateringController.getCateringRestaurantType
+  );
+  app.get(
+    "/api/catering/getCateringAdditionalOption",
+    [authJwt.verifyToken],
+    cateringController.getCateringAdditionalOption
   );
 };

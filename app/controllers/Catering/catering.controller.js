@@ -72,61 +72,65 @@ exports.getCateringById = async (req, res) => {
     );
 
     if (result) {
-      let AllOrderFood = await pool.query(
-        "SELECT * FROM CateringRequestFoodList"
-      );
-      let orderFoods = AllOrderFood.filter(
-        (o) =>
-          parseInt(result[0].idCateringRequest) ===
-          parseInt(o.idCateringRequest)
-      ).reverse();
+      // let AllOrderFood = await pool.query(
+      //   "SELECT * FROM CateringRequestFoodList"
+      // );
+      // let orderFoods = AllOrderFood.filter(
+      //   (o) =>
+      //     parseInt(result[0].idCateringRequest) ===
+      //     parseInt(o.idCateringRequest)
+      // ).reverse();
       let cateringType = await pool.query(
         "SELECT * FROM CateringType WHERE idCateringType = ?",
         [parseInt(result[0].cateringType)]
       );
-      let AllFood = await pool.query("SELECT * FROM CateringFood");
-      let AllRestaurant = await pool.query("SELECT * FROM CateringRestaurant");
-      orderFoods = await Promise.all(
-        orderFoods.map(async (o) => {
-          let food = AllFood.find(
-            (f) => parseInt(o.idCateringFood) === parseInt(f.idCateringFood)
-          );
-
-          if (JSON.parse(food.image).length > 0) {
-            food.fileUrl = await Promise.all(
-              JSON.parse(food.image).map(async (value) => {
-                let datapath = await bucketService.getSignedUrl(
-                  `catering/cateringFood/${value.path}`
-                );
-
-                return datapath;
-              })
-            );
-          } else {
-            food.fileUrl = [];
-          }
-          // food.fileUrl= await Promise.all(
-
-          // );
-
-          let restaurant = AllRestaurant.find(
-            (r) =>
-              parseInt(food.idCateringRestaurant) ===
-              parseInt(r.idCateringRestaurant)
-          );
-          food = { ...food, restaurant: restaurant };
-          return {
-            ...o,
-            food,
-          };
-        })
+      let additionalOption = await pool.query(
+        "SELECT * FROM CateringRequestAdditionalOption WHERE idCateringRequest = ?",
+        [parseInt(result[0].idCateringRequest)]
       );
+      // let AllFood = await pool.query("SELECT * FROM CateringFood");
+      // let AllRestaurant = await pool.query("SELECT * FROM CateringRestaurant");
+      // orderFoods = await Promise.all(
+      //   orderFoods.map(async (o) => {
+      //     let food = AllFood.find(
+      //       (f) => parseInt(o.idCateringFood) === parseInt(f.idCateringFood)
+      //     );
+
+      //     if (JSON.parse(food.image).length > 0) {
+      //       food.fileUrl = await Promise.all(
+      //         JSON.parse(food.image).map(async (value) => {
+      //           let datapath = await bucketService.getSignedUrl(
+      //             `catering/cateringFood/${value.path}`
+      //           );
+
+      //           return datapath;
+      //         })
+      //       );
+      //     } else {
+      //       food.fileUrl = [];
+      //     }
+      // food.fileUrl= await Promise.all(
+
+      // );
+
+      //     let restaurant = AllRestaurant.find(
+      //       (r) =>
+      //         parseInt(food.idCateringRestaurant) ===
+      //         parseInt(r.idCateringRestaurant)
+      //     );
+      //     food = { ...food, restaurant: restaurant };
+      //     return {
+      //       ...o,
+      //       food,
+      //     };
+      //   })
+      // );
       // console.log(orderFoods,"orderFoods")
 
-      let totalPrice = orderFoods.reduce(
-        (a, b) => a + parseFloat(b.food.price) * b.quantity,
-        0
-      );
+      // let totalPrice = orderFoods.reduce(
+      //   (a, b) => a + parseFloat(b.food.price) * b.quantity,
+      //   0
+      // );
 
       // let requester = Users.find((u) => result.requesterId === u.id);
 
@@ -141,8 +145,7 @@ exports.getCateringById = async (req, res) => {
         data: {
           ...result[0],
           cateringTypeName: cateringType[0].Type,
-          orderFoods: orderFoods,
-          totalPrice: totalPrice,
+          additionalOption: additionalOption,
           requester: requester,
         },
         error: null,
@@ -816,6 +819,7 @@ exports.addRequestCatering = async (req, res) => {
     //   companyApproved,
     //   departmentApproved
     // );
+    const additionalOptionList = req.body[1];
 
     const time =
       startTimeHour.toString().padStart(2, "0") +
@@ -823,8 +827,8 @@ exports.addRequestCatering = async (req, res) => {
       startTimeMinute.toString().padStart(2, "0");
 
     const result = await pool.query(
-      `INSERT INTO CateringRequest (name, phoneNumber,email,company,department,costCenter,costElement,date,time, numberOfPeople,sendTo,cateringType,objective,description,idApproved,nameApproved,companyApproved,departmentApproved,additionalOption,status,budget)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"pending",?)
+      `INSERT INTO CateringRequest (name, phoneNumber,email,company,department,costCenter,costElement,date,time, numberOfPeople,sendTo,cateringType,objective,description,idApproved,nameApproved,companyApproved,departmentApproved,status,budget)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"pending",?)
       `,
       [
         name,
@@ -845,32 +849,89 @@ exports.addRequestCatering = async (req, res) => {
         nameApproved,
         companyApproved,
         departmentApproved,
-        JSON.stringify(req.body[1]),
         budget,
       ]
     );
     const resultDataId = await pool.query(
       "SELECT * FROM CateringRequest ORDER BY idCateringRequest DESC LIMIT 1"
     );
-    if (req.body[2] != null) {
-      const restaurantId = req.body[2].id.restaurantId;
-      req.body[2].allFood.map(async (value) => {
-        const { idCateringFood, menuName, price, quantity } = value;
-        const resultdata = await pool.query(
-          `INSERT INTO CateringRequestFoodList (idCateringFood, menuName,price,quantity,totalPrice,idCateringRequest,idCateringRestaurant)
-      VALUES (?,?,?,?,?,?,?)
-    `,
+    const resultFood = await pool.query(
+      `INSERT INTO CateringRequestAdditionalOption (idCateringRequest,idCateringAdditionalOption,nameOption,costOption)
+        VALUES (?,?,?,?)
+      `,
+      [resultDataId[0].idCateringRequest, null, "ค่าอาหาร", parseInt(budget)]
+    );
+    if (additionalOptionList.length > 0) {
+      for (let i = 0; i < additionalOptionList.length; i++) {
+        const resultAdditionalOption = await pool.query(
+          `INSERT INTO CateringRequestAdditionalOption (idCateringRequest,idCateringAdditionalOption,nameOption,costOption)
+            VALUES (?,?,?,?)
+          `,
           [
-            idCateringFood,
-            menuName,
-            price,
-            quantity,
-            quantity * parseFloat(price),
             resultDataId[0].idCateringRequest,
-            restaurantId,
+            additionalOptionList[i].idAdditionalOption,
+            additionalOptionList[i].nameOption,
+            additionalOptionList[i].costOption,
           ]
         );
-      });
+      }
+    }
+
+    // if (req.body[2] != null) {
+    //   const restaurantId = req.body[2].id.restaurantId;
+    //   req.body[2].allFood.map(async (value) => {
+    //     const { idCateringFood, menuName, price, quantity } = value;
+    //     const resultdata = await pool.query(
+    //       `INSERT INTO CateringRequestFoodList (idCateringFood, menuName,price,quantity,totalPrice,idCateringRequest,idCateringRestaurant)
+    //   VALUES (?,?,?,?,?,?,?)
+    // `,
+    //       [
+    //         idCateringFood,
+    //         menuName,
+    //         price,
+    //         quantity,
+    //         quantity * parseFloat(price),
+    //         resultDataId[0].idCateringRequest,
+    //         restaurantId,
+    //       ]
+    //     );
+    //   });
+    // }
+
+    return res.status(200).send({
+      success: true,
+      data: result,
+      error: null,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.updateCostRequestCatering = async (req, res) => {
+  try {
+    const { id, totalPrice } = req.body[0];
+    const costList = req.body[0].costList;
+    console.log(id);
+    console.log(totalPrice);
+    console.log(costList);
+
+    const result = await pool.query(
+      "UPDATE CateringRequest SET totalCost = ? WHERE idCateringRequest = ?",
+      [totalPrice, id]
+    );
+    for (let i = 0; i < costList.length; i++) {
+      const resultAdditionalOption = await pool.query(
+        "UPDATE CateringRequestAdditionalOption SET costOption = ? WHERE idCateringRequestAdditionalOption = ? AND idCateringRequest = ?",
+        [
+          costList[i].costOption,
+          costList[i].idCateringRequestAdditionalOption,
+          parseInt(id),
+        ]
+      );
     }
 
     return res.status(200).send({
@@ -889,6 +950,23 @@ exports.addRequestCatering = async (req, res) => {
 exports.getCateringRestaurantType = async (req, res) => {
   try {
     let result = await pool.query("SELECT * FROM CateringRestaurantType");
+
+    return res.status(200).send({
+      success: true,
+      data: result,
+      error: null,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.getCateringAdditionalOption = async (req, res) => {
+  try {
+    let result = await pool.query("SELECT * FROM CateringAdditionalOption");
 
     return res.status(200).send({
       success: true,
