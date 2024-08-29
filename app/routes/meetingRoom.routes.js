@@ -1,5 +1,5 @@
 const { authJwt } = require("../middleware");
-const MeetingRoomController = require("../controllers/meetingRoom.controller")
+const MeetingRoomController = require("../controllers/meetingRoom.controller");
 const multer = require("multer");
 const upload = multer();
 module.exports = function (app) {
@@ -20,7 +20,7 @@ module.exports = function (app) {
     "/api/all_new_meeting_room",
     [authJwt.verifyToken],
     MeetingRoomController.getAllNewMeetingRoom
-  )
+  );
   app.get(
     "/api/all_image_new_meeting_room_byId/:id",
     [authJwt.verifyToken],
@@ -37,7 +37,7 @@ module.exports = function (app) {
     MeetingRoomController.postNewMeetingRoomBooking
   );
   app.get(
-    "/api/get_meeting_room_booking_byId/:idUser",
+    "/api/get_meeting_room_booking_byIdUser/:idUser",
     [authJwt.verifyToken],
     MeetingRoomController.getMeetingRoomBookingByIdUser
   );
@@ -46,7 +46,7 @@ module.exports = function (app) {
     [authJwt.verifyToken],
     MeetingRoomController.getAllNewMeetingRoomBooking
   );
-  app.get(
+  app.post(
     "/api/all_new_meeting_room_booking_and_all_meeting_room",
     [authJwt.verifyToken],
     MeetingRoomController.getAllMeetingRoomBookingAndAllMeetingRoom
@@ -70,5 +70,10 @@ module.exports = function (app) {
     "/api/get_meeting_room_booking_byIdMeetingRoom/:id",
     [authJwt.verifyToken],
     MeetingRoomController.getAllMeetingRoomBookingByIdMeetingRoom
+  );
+  app.get(
+    "/api/get_meeting_room_booking_byId/:id",
+    [authJwt.verifyToken],
+    MeetingRoomController.getMeetingRoomBookingById
   );
 };

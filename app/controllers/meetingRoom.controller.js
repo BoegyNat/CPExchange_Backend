@@ -12,6 +12,7 @@ exports.postNewMeetingRoom = async (req, res) => {
     phone,
     email,
     price,
+    priceAllDay,
   } = JSON.parse(req.body.data);
   // console.log(req.body.data, req.files);
   const files = req.files;
@@ -77,9 +78,9 @@ exports.postNewMeetingRoom = async (req, res) => {
       `
         INSERT INTO 
         NewMeetingRoom 
-            (nameMeetingRoom, place, province, numberOfPeople, detail, nameManager, phoneManager, emailManager, facilities, price,imagePath) 
+            (nameMeetingRoom, place, province, numberOfPeople, detail, nameManager, phoneManager, emailManager, facilities, price, priceAllDay,imagePath) 
         VALUES 
-          (?,?,?,?,?,?,?,?,?,?,?)`,
+          (?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         nameMeetingRoom,
         place,
@@ -91,6 +92,7 @@ exports.postNewMeetingRoom = async (req, res) => {
         email,
         req.body.fields,
         price,
+        priceAllDay,
         JSON.stringify(attachment),
       ]
     );
@@ -129,16 +131,18 @@ exports.postNewMeetingRoomBooking = async (req, res) => {
       timeStart,
       timeEnd,
       numOfPeople,
+      isBookAllDay,
       totalPrice,
       idMeetingRoom,
     } = req.body[0];
     // console.log(startDate,timeStart)
     // console.log((new Date(startDate+", " + timeStart)).toString())
-    const data = await pool.query("SELECT * FROM Users WHERE idUser = ?", [
-      idUser,
-    ]);
-    const nameUser = data[0].fNameThai;
-    const phoneUser = data[0].mobileNumber;
+    const data = await pool.query(
+      "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+      [idUser]
+    );
+    const nameUser = data[0].firstname_TH + " " + data[0].lastname_TH;
+    const phoneUser = data[0].telephoneMobile;
     const emailUser = data[0].email;
     const rows = await pool.query(
       `
@@ -147,9 +151,9 @@ exports.postNewMeetingRoomBooking = async (req, res) => {
             (idUser,
               nameUser,
               phoneUser,
-              emailUser, startDate, endDate, timeStart, timeEnd, numOfPeople, totalPrice, idMeetingRoom) 
+              emailUser, startDate, endDate, timeStart, timeEnd, numOfPeople, isBookAllDay, totalPrice, idMeetingRoom) 
         VALUES 
-          (?,?,?,?,?,?,?,?,?,?,?)`,
+          (?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         idUser,
         nameUser,
@@ -160,6 +164,7 @@ exports.postNewMeetingRoomBooking = async (req, res) => {
         timeStart,
         timeEnd,
         numOfPeople,
+        isBookAllDay,
         totalPrice,
         idMeetingRoom,
       ]
@@ -289,9 +294,43 @@ exports.getAllNewMeetingRoomBooking = async (req, res) => {
 
 exports.getAllMeetingRoomBookingAndAllMeetingRoom = async (req, res) => {
   try {
-    const row = await pool.query(
+    const { nameUser, status, startDate } = req.body;
+    let row;
+    row = await pool.query(
       "SELECT * FROM NewMeetingRoomBooking JOIN NewMeetingRoom WHERE NewMeetingRoomBooking.idMeetingRoom = NewMeetingRoom.idNewMeetingRoom"
     );
+
+    if (nameUser != "") {
+      row = row.filter((value) => {
+        return value.nameUser.includes(nameUser);
+      });
+    }
+
+    if (status) {
+      row = row.filter((value) => {
+        if (status !== "Pending") return value.statusApprove == status;
+        else return value.statusApprove == null;
+      });
+    }
+
+    if (startDate) {
+      row = row.filter((value) => {
+        return new Date(value.startDate)
+          .toLocaleDateString("th-TH", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })
+          .includes(
+            new Date(startDate).toLocaleDateString("th-TH", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })
+          );
+      });
+    }
+
     if (row.length > 0) {
       res.status(200).send(row);
     } else {
@@ -312,7 +351,9 @@ exports.postApprovedlMeetingRoomBooking = async (req, res) => {
     );
 
     if (rows) {
-      const result = await pool.query("SELECT * FROM NewMeetingRoomBooking");
+      const result = await pool.query(
+        "SELECT * FROM NewMeetingRoomBooking JOIN NewMeetingRoom WHERE NewMeetingRoomBooking.idMeetingRoom = NewMeetingRoom.idNewMeetingRoom"
+      );
       res.status(200).send(result);
     } else {
       res.status(404).send("Not Found Booking");
@@ -438,6 +479,23 @@ exports.getAllMeetingRoomBooking = async (req, res) => {
     // row = row.filter((value)=> console.log((new Date(value.startDate)).toString().substring(0, 15) === (new Date()).toString().substring(0, 15) ))
 
     // console.log(new Date(row[0].startDate).toISOString().substring(0, 10))
+    if (row.length > 0) {
+      res.status(200).send(row);
+    } else {
+      res.status(200).send(row);
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getMeetingRoomBookingById = async (req, res) => {
+  try {
+    let row = await pool.query(
+      "SELECT * FROM NewMeetingRoomBooking JOIN NewMeetingRoom ON NewMeetingRoomBooking.idMeetingRoom = NewMeetingRoom.idNewMeetingRoom WHERE NewMeetingRoomBooking.idNewMeetingRoomBooking = ? ",
+      [parseInt(req.params.id)]
+    );
+
     if (row.length > 0) {
       res.status(200).send(row);
     } else {
