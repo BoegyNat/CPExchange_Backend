@@ -265,10 +265,26 @@ exports.getDriverBookingByFilter = async (req, res) => {
 
     let result;
     if (name === "") {
-      result = await pool.query("SELECT * FROM DriverBooking");
+      result = await pool.query(
+        "SELECT * FROM DriverBooking db LEFT JOIN UniHR.Employees e ON db.idUser = e.idEmployees LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany  WHERE db.idUser = e.idEmployees AND ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL ;"
+      );
     } else {
-      result = await pool.query(`SELECT  * FROM DriverBooking WHERE
-      LOWER(DriverBooking.nameUser) LIKE '%${name.toLowerCase()}%'`);
+      result = await pool.query(`
+        SELECT * 
+        FROM DriverBooking db 
+        LEFT JOIN UniHR.Employees e ON db.idUser = e.idEmployees 
+        LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  
+        LEFT JOIN UniHR.\`Position\` p ON ep.idPosition = p.idPosition 
+        LEFT JOIN UniHR.\`Section\` s ON p.idSection = s.idSection 
+        LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment 
+        LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision 
+        LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit 
+        LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany  
+        WHERE db.idUser = e.idEmployees 
+        AND LOWER(db.nameUser) LIKE '%${name.toLowerCase()}%'
+        AND (ep.\`start\` <= CURDATE() 
+        AND (ep.\`end\` >= CURDATE() OR ep.\`end\` IS NULL));
+      `);
     }
 
     if (from === "") {
