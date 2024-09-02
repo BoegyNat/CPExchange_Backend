@@ -13,7 +13,7 @@ exports.signin = async (req, res) => {
   if (isDriver) {
     await pool
       .query(
-        `SELECT username , password , idUser , authorities  , image FROM Users WHERE username = ? LIMIT 1;`,
+        `SELECT firstname , lastname , fNameThai , email , username , password , idUser , authorities  , image FROM Users WHERE username = ? LIMIT 1;`,
         [username.toLowerCase()]
       )
       .then((rows) => {
@@ -30,6 +30,10 @@ exports.signin = async (req, res) => {
                 type: "success",
                 msg: "Login success",
                 returnData: {
+                  firstname_TH: rows[0].firstname,
+                  lastname_TH: rows[0].lastname,
+                  fullname: rows[0].fNameThai,
+                  email: rows[0].email,
                   idUser: rows[0].idUser,
                   username: rows[0].username,
                   roles: rows[0].authorities,
@@ -55,7 +59,7 @@ exports.signin = async (req, res) => {
       .query(
         `
 SELECT 
-      username , password , idEmployees , e.idRole  , imageName ,personalID ,r.roleName 
+      e.firstname_TH , e.lastname_TH , e.email , username , password , idEmployees , e.idRole  , imageName ,personalID ,r.roleName 
     FROM 
       UniHR.Employees e 
       LEFT JOIN UniHR.Role r ON r.idRole = e.idRole 
@@ -85,6 +89,10 @@ SELECT
                   type: "success",
                   msg: "Login success",
                   returnData: {
+                    fullname: rows[0].firstname_TH + " " + rows[0].lastname_TH,
+                    firstname_TH: rows[0].firstname_TH,
+                    lastname_TH: rows[0].lastname_TH,
+                    email: rows[0].email,
                     idUser: rows[0].idEmployees,
                     username: rows[0].username,
                     roles:
@@ -120,6 +128,10 @@ SELECT
                 type: "success",
                 msg: "Login success",
                 returnData: {
+                  fullname: rows[0].firstname_TH + " " + rows[0].lastname_TH,
+                  firstname_TH: rows[0].firstname_TH,
+                  lastname_TH: rows[0].lastname_TH,
+                  email: rows[0].email,
                   idUser: rows[0].idEmployees,
                   username: rows[0].username,
                   roles:
