@@ -38,6 +38,40 @@ exports.getLocationDriverById = async (req, res) => {
       "SELECT * FROM LocationDriver WHERE idDriver = ? ORDER BY idLocationDriver DESC LIMIT 1",
       [req.params.idDriver]
     );
+    const emergency = await pool.query(
+      "SELECT * FROM DriverEmergency WHERE idDriver = ? AND isActive = 1 ORDER BY idDriverEmergency DESC LIMIT 1",
+      [req.params.idDriver]
+    );
+
+    if (emergency.length > 0) {
+      rows[0].emergency = emergency[0];
+    }
+    if (!rows) {
+      return res.status(404).send({ message: "Not found" });
+    } else return res.status(200).send(rows);
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getAllLocationDriver = async (req, res) => {
+  try {
+    const rows = await pool.query(
+      "SELECT * FROM LocationDriver ld LEFT JOIN Driver d ON ld.idDriver = d.idUser WHERE idLocationDriver IN (SELECT MAX(idLocationDriver) FROM LocationDriver GROUP BY idDriver) AND d.IsActive = 0;"
+    );
+    for (let i = 0; i < rows.length; i++) {
+      const emergency = await pool.query(
+        "SELECT * FROM DriverEmergency WHERE isActive = 1 AND idDriver = ? ORDER BY idDriverEmergency DESC LIMIT 1",
+        [rows[i].idUser]
+      );
+
+      if (emergency.length > 0) {
+        rows[i].emergency = emergency[0];
+        rows[i].emergencyStatus = true;
+      } else {
+        rows[i].emergencyStatus = false;
+      }
+    }
     if (!rows) {
       return res.status(404).send({ message: "Not found" });
     } else return res.status(200).send(rows);

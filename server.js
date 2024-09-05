@@ -9,7 +9,7 @@ var corsOptions = {
     "http://localhost:8081",
     "http://localhost:3000",
     "http://localhost:3001",
-    "https://uniadmin.co"
+    "https://uniadmin.co",
   ],
 };
 
@@ -65,7 +65,7 @@ require("./app/routes/driverRouteDay.routes")(app);
 require("./app/routes/adminLentCar.routes")(app);
 require("./app/routes/routeCrossAreaCarPool.routes")(app);
 require("./app/routes/deliverySampleshuttle.routes")(app);
-
+require("./app/routes/emergency.route")(app);
 require("./app/routes/site.routes")(app);
 
 require("./app/routes/review.route")(app);

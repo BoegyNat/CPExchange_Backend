@@ -19,5 +19,6 @@ module.exports = function (app) {
     "/api/get_location_Driver_by_id/:idDriver",
     SiteController.getLocationDriverById
   );
+  app.get("/api/get_all_location_Driver", SiteController.getAllLocationDriver);
   app.get("/api/get_all_site", SiteController.getAllSite);
 };
