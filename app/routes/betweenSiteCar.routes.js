@@ -39,6 +39,11 @@ module.exports = function (app) {
     [authJwt.verifyToken],
     betweenSiteCarController.setFinishCallCar
   );
+  app.get(
+    "/api/update_target_status_call_car/:id",
+    [authJwt.verifyToken],
+    betweenSiteCarController.updateTargetStatus
+  );
 
   app.post(
     "/api/cancel_between_site_car/:idUser",
@@ -56,6 +61,12 @@ module.exports = function (app) {
     "/api/between_site_car_by_driver/:idDriver",
     [authJwt.verifyToken],
     betweenSiteCarController.getBetweenSiteCarByIdDriver
+  );
+
+  app.get(
+    "/api/between_site_car_by_driver_is_notFinish/:idDriver",
+    [authJwt.verifyToken],
+    betweenSiteCarController.getBetweenSiteCarByIdDriverIsNotFinish
   );
   app.get(
     "/api/getsite",

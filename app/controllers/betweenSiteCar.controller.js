@@ -122,6 +122,55 @@ exports.setFinishCallCar = async (req, res) => {
   }
 };
 
+exports.updateTargetStatus = async (req, res) => {
+  try {
+    const row = await pool.query(
+      "UPDATE BetweenSiteCar SET targetStatus = ? WHERE idBetweenSiteCar = ? AND isFinish = ?",
+      ["ToPlace", req.params.id, false]
+    );
+    if (row) {
+      let result = await pool.query(
+        "SELECT * FROM BetweenSiteCar WHERE BetweenSiteCar.idBetweenSiteCar = ? ",
+        [req.params.id]
+      );
+      if (result.length > 0) {
+        const User = await pool.query(
+          "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ? AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
+          [result[0].idUser]
+        );
+        const fromPlace = await pool.query(
+          "SELECT * FROM ScgSite WHERE idScgSite = ?",
+          [result[0].gettingPlace]
+        );
+        const toPlace = await pool.query(
+          "SELECT * FROM ScgSite WHERE idScgSite = ?",
+          [result[0].toPlace]
+        );
+        result[0].fromPlaceName =
+          fromPlace[0].noSite !== null
+            ? `Site${fromPlace[0].noSite}: ${fromPlace[0].nameSite}`
+            : `${fromPlace[0].nameSite}`;
+        result[0].toPlaceName =
+          toPlace[0].noSite !== null
+            ? `Site${toPlace[0].noSite}: ${toPlace[0].nameSite}`
+            : `${toPlace[0].nameSite}`;
+        result[0].user = User[0];
+        result[0].fromPlace = fromPlace[0];
+        result[0].toPlace = toPlace[0];
+      }
+      if (result) {
+        res.status(200).send(result[0]);
+      } else {
+        res.status(404).send("Not Found This Id");
+      }
+    } else {
+      res.status(404).send("Not Found This Id");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
 exports.AcceptPassenger = (req, res) => {
   try {
     let index = BetweenSiteCars.find(
@@ -188,6 +237,45 @@ exports.getBetweenSiteCarByIdDriver = async (req, res) => {
         booking.vehicle = Vehicles[0];
       }
 
+      res.status(200).send(result);
+    } else {
+      res.status(404).send("Not Found This Id");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getBetweenSiteCarByIdDriverIsNotFinish = async (req, res) => {
+  try {
+    let result = await pool.query(
+      "SELECT * FROM BetweenSiteCar WHERE BetweenSiteCar.idDriverRouteDay = ? AND BetweenSiteCar.isFinish = ?",
+      [req.params.idDriver, false]
+    );
+    if (result.length > 0) {
+      const User = await pool.query(
+        "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ? AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
+        [result[0].idUser]
+      );
+      const fromPlace = await pool.query(
+        "SELECT * FROM ScgSite WHERE idScgSite = ?",
+        [result[0].gettingPlace]
+      );
+      const toPlace = await pool.query(
+        "SELECT * FROM ScgSite WHERE idScgSite = ?",
+        [result[0].toPlace]
+      );
+      result[0].fromPlaceName =
+        fromPlace[0].noSite !== null
+          ? `Site${fromPlace[0].noSite}: ${fromPlace[0].nameSite}`
+          : `${fromPlace[0].nameSite}`;
+      result[0].toPlaceName =
+        toPlace[0].noSite !== null
+          ? `Site${toPlace[0].noSite}: ${toPlace[0].nameSite}`
+          : `${toPlace[0].nameSite}`;
+      result[0].user = User[0];
+      result[0].fromPlace = fromPlace[0];
+      result[0].toPlace = toPlace[0];
       res.status(200).send(result);
     } else {
       res.status(404).send("Not Found This Id");
