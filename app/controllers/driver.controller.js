@@ -88,6 +88,8 @@ exports.postNewDriver = async (req, res) => {
           Salary,
           CostCenter,
           CostElement,
+          isSmoking,
+          isDrinking,
           IsActive,
           CreatedBy,
           CreatedDate,
@@ -95,7 +97,7 @@ exports.postNewDriver = async (req, res) => {
           Rating
         )
       VALUES
-        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?,?,?,?,?,?,?,?)
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ,?,?,?,?,?,?,?,?,?,?)
       `,
       [
         lastIdUser[0].idUser + 1,
@@ -113,6 +115,8 @@ exports.postNewDriver = async (req, res) => {
         newDriver.Salary,
         newDriver.CostCenter,
         newDriver.CostElement,
+        newDriver.isSmoking,
+        newDriver.isDrinking,
         0,
         "Admin",
         new Date(),

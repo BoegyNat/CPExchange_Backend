@@ -1,25 +1,6 @@
 const pool = require("../connection.js");
-const WebSocket = require("ws");
+const WebSocket = require("../web-socket.js");
 
-const wss = new WebSocket.Server({ port: 8081 });
-
-// จัดการการเชื่อมต่อ WebSocket
-wss.on("connection", (ws) => {
-  console.log("Admin connected");
-
-  ws.on("close", () => {
-    console.log("Admin disconnected");
-  });
-});
-
-// แจ้งเตือนผู้ดูแลระบบที่เชื่อมต่อทั้งหมด
-function notifyAdmins(message) {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
-    }
-  });
-}
 exports.allDriverEmergency = async (req, res) => {
   try {
     // let result = Drivers.filter((driver) => driver.IsActive == 0);
@@ -63,7 +44,7 @@ exports.postNewDriverEmergency = async (req, res) => {
         const result1 = await pool.query(
           "SELECT * FROM DriverEmergency WHERE isActive = 1"
         );
-        notifyAdmins(JSON.stringify(result1)); // แจ้งเตือนผู้ดูแลระบบ
+        WebSocket.notify("emergency", JSON.stringify(result1)); // แจ้งเตือนผู้ดูแลระบบ
         res.status(200).send(result);
       } else {
         res.status(404).send({ message: error.message });
@@ -78,7 +59,7 @@ exports.postNewDriverEmergency = async (req, res) => {
         const result1 = await pool.query(
           "SELECT * FROM DriverEmergency WHERE isActive = 1"
         );
-        notifyAdmins(JSON.stringify(result1)); // แจ้งเตือนผู้ดูแลระบบ
+        WebSocket.notify("emergency", JSON.stringify(result1)); // แจ้งเตือนผู้ดูแลระบบ
         res.status(200).send(result);
       } else {
         res.status(404).send({ message: error.message });

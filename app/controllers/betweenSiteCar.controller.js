@@ -7,6 +7,7 @@ const haversine = require("haversine-distance");
 const pool = require("../connection.js");
 const axios = require("axios");
 const dayjs = require("dayjs");
+const WebSocket = require("../web-socket.js");
 
 dayjs.locale("th");
 
@@ -308,7 +309,7 @@ exports.postNewBetweenSiteCar = async (req, res) => {
       [idUser]
     );
     const result = await pool.query(
-      "INSERT INTO BetweenSiteCar (idUser,name, gettingPlace,toPlace,idDriverRouteDay,date,arrivedTime,isFinish) VALUES (?,?,?,?,?,?,?,?)",
+      "INSERT INTO BetweenSiteCar (idUser,name, gettingPlace,toPlace,idDriverRouteDay,date,arrivedTime,isFinish,targetStatus) VALUES (?,?,?,?,?,?,?,?,?)",
       [
         idUser,
         user[0].firstname_TH + " " + user[0].lastname_TH,
@@ -318,9 +319,11 @@ exports.postNewBetweenSiteCar = async (req, res) => {
         new Date(),
         data.eta,
         false,
+        "GettingPlace",
       ]
     );
     if (result) {
+      WebSocket.notify("betweenSiteCar", data.nearestDriverId);
       res.status(200).send({ result, data });
     } else {
       res.status(404).send("Not Found");
