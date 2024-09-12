@@ -66,10 +66,16 @@ module.exports = function (app) {
   );
 
   //get All Technician
-  app.get(
+  app.post(
     "/api/maintenances/getAllTechnicians",
     [authJwt.verifyToken],
     maintenanceController.getAllTechnicians
+  );
+
+  app.get(
+    "/api/maintenances/getTechniciansById/:id",
+    [authJwt.verifyToken],
+    maintenanceController.getTechniciansById
   );
 
   //post new technician
@@ -77,5 +83,17 @@ module.exports = function (app) {
     "/api/maintenances/addTechinician",
     [authJwt.verifyToken, upload.single("image")],
     maintenanceController.newTechnician
+  );
+
+  app.post(
+    "/api/maintenances/editTechinician",
+    [authJwt.verifyToken, upload.single("image")],
+    maintenanceController.editTechnician
+  );
+
+  app.post(
+    "/api/maintenances/deleteTechinician",
+    [authJwt.verifyToken],
+    maintenanceController.deleteTechnician
   );
 };

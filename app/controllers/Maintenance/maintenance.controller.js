@@ -676,7 +676,10 @@ exports.getAllTechnicians = async (req, res) => {
     // let result = [...MaintenanceTechnicians].reverse();
     let result = await pool.query("SELECT * FROM MaintenanceTechnicians");
     let resultMaintenances = await pool.query("SELECT * FROM Maintenances");
-    const { fullName, type } = req.query;
+    const { fullName, type } = req.body;
+    console.log(req.body);
+    console.log(fullName);
+    console.log(type);
 
     if (fullName) {
       result = result.filter((m) => m.fullName.includes(fullName));
@@ -690,7 +693,19 @@ exports.getAllTechnicians = async (req, res) => {
       return {
         ...t,
         upComingWork: resultMaintenances.filter(
-          (m) => JSON.parse(m.technicianId).includes(t.idMaintenanceTechnicians)
+          (m) => {
+            if (m.technicianId !== null) {
+              if (JSON.parse(m.technicianId).length > 0) {
+                if (
+                  JSON.parse(m.technicianId).includes(
+                    t.idMaintenanceTechnicians
+                  )
+                ) {
+                  return m;
+                }
+              }
+            }
+          }
           //console.log(JSON.parse(m.technicianId))
           // parseInt(m.technicianId) === parseInt(t.idMaintenanceTechnicians) &&
           // parseInt(m.status) === 2
@@ -722,6 +737,44 @@ exports.getAllTechnicians = async (req, res) => {
     return res.status(200).send({
       success: true,
       data: result,
+      error: null,
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.getTechniciansById = async (req, res) => {
+  try {
+    let result = await pool.query(
+      "SELECT * FROM MaintenanceTechnicians WHERE idMaintenanceTechnicians = ?",
+      [req.params.id]
+    );
+
+    if (result) {
+      const data = result[0].image;
+      console.log(data);
+      result = await Promise.all(
+        result.map(async (t, index) => {
+          if (JSON.parse(t.image).length > 0) {
+            let datapath = await bucketService.getSignedUrl(
+              `technician/${JSON.parse(t.image)[0].path}`
+            );
+            return {
+              ...t,
+              fileUrl: datapath,
+            };
+          }
+        })
+      );
+    }
+
+    return res.status(200).send({
+      success: true,
+      data: result[0],
       error: null,
     });
   } catch (error) {
@@ -827,11 +880,12 @@ exports.newTechnician = async (req, res) => {
       `
 				  INSERT INTO 
 				  MaintenanceTechnicians 
-					  (fullName, phoneNumber, email, types, description, totalWork, completeWork,
+					  (idMaintenanceTechnicians,fullName, phoneNumber, email, types, description, totalWork, completeWork,
               image) 
 				  VALUES 
-					  (?,?,?,?,?,0,0,?)`,
+					  (?,?,?,?,?,?,0,0,?)`,
       [
+        lastedTechnicianId,
         fullName,
         phoneNumber,
         email,
@@ -862,6 +916,180 @@ exports.newTechnician = async (req, res) => {
       data: newTechnicianData,
       error: null,
     });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.editTechnician = async (req, res) => {
+  try {
+    // if (!req.params.currentRoles.includes("ROLE_ADMIN")) {
+    //   return res.status(403).send({
+    //     success: false,
+    //     error: "no permission to access",
+    //   });
+    // }
+
+    const {
+      idMaintenanceTechnicians,
+      fullName,
+      phoneNumber,
+      email,
+      types,
+      description,
+      path,
+    } = req.body;
+    const file = req.file;
+
+    if (!fullName || !phoneNumber || !email || !types || !description) {
+      return res.status(500).send({
+        success: false,
+        error: "incomplete information",
+      });
+    }
+    if (file) {
+      if (!["image/jpeg", "image/jpg", "image/png"].includes(file.mimetype)) {
+        return res.status(500).send({
+          success: false,
+          error: "invalid file type.",
+        });
+      }
+    }
+
+    if (file) {
+      const pathName = JSON.parse(path)[0].path;
+      const avatarName =
+        "unknow" +
+        "." +
+        file.originalname.split(".")[file.originalname.split(".").length - 1];
+      bucketService.deleteFile(`technician/${pathName}`);
+      bucketService.uploadFile(
+        `technician/${idMaintenanceTechnicians}/${avatarName}`,
+        file
+      );
+      const attachment = [];
+      attachment.push({
+        // fileName: file.originalname,
+        path: `${idMaintenanceTechnicians}/${avatarName}`,
+      });
+      const rows = await pool.query(
+        `
+            UPDATE MaintenanceTechnicians 
+            SET fullName = ?, phoneNumber = ?, email = ?, types = ?, description = ?, image = ?
+            WHERE idMaintenanceTechnicians = ?`,
+        [
+          fullName,
+          phoneNumber,
+          email,
+          types,
+          description,
+          JSON.stringify(attachment),
+          idMaintenanceTechnicians,
+        ]
+      );
+    } else {
+      const rows = await pool.query(
+        `
+            UPDATE MaintenanceTechnicians 
+            SET fullName = ?, phoneNumber = ?, email = ?, types = ?, description = ?
+            WHERE idMaintenanceTechnicians = ?`,
+        [
+          fullName,
+          phoneNumber,
+          email,
+          types,
+          description,
+          idMaintenanceTechnicians,
+        ]
+      );
+    }
+    const newTechnicianData = {
+      id: idMaintenanceTechnicians,
+      fullName: fullName,
+      phoneNumber: phoneNumber,
+      email: email,
+      types: types.split(","),
+      description: description,
+      totalWork: 0,
+      completeWork: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    // MaintenanceTechnicians.push(newTechnicianData);
+
+    return res.status(200).send({
+      success: true,
+      data: newTechnicianData,
+      error: null,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.deleteTechnician = async (req, res) => {
+  try {
+    const data = req.body;
+    if (data.upComingWork.length > 0) {
+      for (let i = 0; i < data.upComingWork.length; i++) {
+        const findMaintenances = await pool.query(
+          `SELECT technicianId FROM Maintenances WHERE idMaintenances = ${data.upComingWork[i].idMaintenances}`
+        );
+        const technicianId = JSON.parse(findMaintenances[0].technicianId);
+        console.log(technicianId);
+        const technicianId_Temp = [];
+        for (let i = 0; i < technicianId.length; i++) {
+          if (technicianId[i] != data.idMaintenanceTechnicians) {
+            technicianId_Temp.push(technicianId[i]);
+          }
+        }
+        console.log("Temp", technicianId_Temp);
+        if (technicianId_Temp.length > 0) {
+          const updateMaintenances = await pool.query(
+            `UPDATE Maintenances SET technicianId = ? WHERE idMaintenances = ${data.upComingWork[i].idMaintenances}`,
+            [JSON.stringify(technicianId_Temp)]
+          );
+        } else {
+          if (data.upComingWork[i].status == 5) {
+            const updateMaintenances = await pool.query(
+              `UPDATE Maintenances SET status = 5, technicianId = ? WHERE idMaintenances = ${data.upComingWork[i].idMaintenances}`,
+              [JSON.stringify(technicianId_Temp)]
+            );
+          } else if (data.upComingWork[i].status == 3) {
+            const updateMaintenances = await pool.query(
+              `UPDATE Maintenances SET status = 3, technicianId = ? WHERE idMaintenances = ${data.upComingWork[i].idMaintenances}`,
+              [JSON.stringify(technicianId_Temp)]
+            );
+          } else {
+            const updateMaintenances = await pool.query(
+              `UPDATE Maintenances SET status = 1, technicianId = ? WHERE idMaintenances = ${data.upComingWork[i].idMaintenances}`,
+              [JSON.stringify(technicianId_Temp)]
+            );
+          }
+        }
+      }
+    }
+    const path = JSON.parse(data.image)[0].path;
+    bucketService.deleteFile(`technician/${path}`);
+    console.log(data);
+
+    const rows = await pool.query(
+      `DELETE FROM MaintenanceTechnicians WHERE idMaintenanceTechnicians = ${data.idMaintenanceTechnicians}`
+    );
+    if (rows.affectedRows > 0) {
+      return res.status(200).send({
+        success: true,
+        data: null,
+        error: null,
+      });
+    }
   } catch (error) {
     return res.status(500).send({
       success: false,
