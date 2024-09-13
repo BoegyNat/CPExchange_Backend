@@ -1,6 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const http = require("http"); // Import HTTP to combine with WebSocket
+const WebSocket = require("ws"); // Import WebSocket
 
 const app = express();
 
@@ -67,7 +69,6 @@ require("./app/routes/routeCrossAreaCarPool.routes")(app);
 require("./app/routes/deliverySampleshuttle.routes")(app);
 require("./app/routes/emergency.route")(app);
 require("./app/routes/site.routes")(app);
-
 require("./app/routes/review.route")(app);
 
 // Catering
@@ -76,31 +77,50 @@ require("./app/routes/Catering/catering.routes")(app);
 // Maintenances
 require("./app/routes/Maintenance/maintenance.routes")(app);
 
-//MeetingRoom
+// MeetingRoom
 require("./app/routes/meetingRoom.routes")(app);
 
-//DriverBooking
+// DriverBooking
 require("./app/routes/driverBooking.routes")(app);
+
+// Create an HTTP server and attach the Express app
+const server = http.createServer(app);
+
+// Create WebSocket server using the same HTTP server
+const wss = new WebSocket.Server({ server });
+
+// Handle WebSocket connections
+wss.on("connection", (ws) => {
+  console.log("Client connected");
+
+  ws.on("message", (message) => {
+    console.log("Received:", message);
+  });
+
+  ws.on("close", () => {
+    console.log("Client disconnected");
+  });
+
+  // Example: Send a welcome message to the client
+  ws.send(JSON.stringify({ type: "welcome", message: "WebSocket connected!" }));
+});
+
+// Broadcast function to notify all connected clients
+exports.notify = function notify(type, message) {
+  const data = {
+    type: type,
+    message: message,
+  };
+
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(data));
+    }
+  });
+};
 
 // set port, listen for requests
 const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}.`);
 });
-
-// function initial() {
-//   Role.create({
-//     id: 1,
-//     name: "user"
-//   });
-
-//   Role.create({
-//     id: 2,
-//     name: "moderator"
-//   });
-
-//   Role.create({
-//     id: 3,
-//     name: "admin"
-//   });
-// }

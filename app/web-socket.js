@@ -1,7 +1,7 @@
 const WebSocket = require("ws");
 
 const wss = new WebSocket.Server({ port: 8082 });
-
+console.log("wss => ", wss);
 // จัดการการเชื่อมต่อ WebSocket
 wss.on("connection", (ws) => {
   console.log("connected");

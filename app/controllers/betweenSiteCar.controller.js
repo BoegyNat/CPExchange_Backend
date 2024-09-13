@@ -7,7 +7,7 @@ const haversine = require("haversine-distance");
 const pool = require("../connection.js");
 const axios = require("axios");
 const dayjs = require("dayjs");
-const WebSocket = require("../web-socket.js");
+const WebSocket = require("../../server.js");
 
 dayjs.locale("th");
 

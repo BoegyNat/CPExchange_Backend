@@ -1,5 +1,5 @@
 const pool = require("../connection.js");
-const WebSocket = require("../web-socket.js");
+const WebSocket = require("../../server.js");
 
 exports.allDriverEmergency = async (req, res) => {
   try {
