@@ -17,8 +17,11 @@ exports.notify = function notify(type, message) {
     type: type,
     message: message,
   };
-  wss.clients.forEach((client) => {
+
+  console.log("notify => ", data);
+  wss.clients.forEach((client, index) => {
     if (client.readyState === WebSocket.OPEN) {
+      console.log("notify (" + type + ") => " + index);
       client.send(JSON.stringify(data));
     }
   });
