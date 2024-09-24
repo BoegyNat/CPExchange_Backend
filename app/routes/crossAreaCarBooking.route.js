@@ -65,6 +65,12 @@ module.exports = function (app) {
   );
 
   app.post(
+    "/api/update_cross_area_car_booking",
+    [authJwt.verifyToken],
+    crossAreaCarBookingController.postUpdateCrossAreaCarBooking
+  );
+
+  app.post(
     "/api/manage_car_cross_area_car_booking",
     [authJwt.verifyToken],
     crossAreaCarBookingController.postManageCarCrossAreaCarBooking

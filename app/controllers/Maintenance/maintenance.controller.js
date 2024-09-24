@@ -34,7 +34,7 @@ setInterval(async () => {
 
 //add new maintenance request
 exports.addNewMaintenanceRequest = async (req, res) => {
-  console.log(req);
+  // console.log(req);
   try {
     const {
       idUser,
@@ -167,6 +167,157 @@ exports.addNewMaintenanceRequest = async (req, res) => {
     if (rows) {
       const newMaintenance = {
         idMaintenances: lastedMaintenanceId,
+        userId: +req.body.idUser,
+        maintenanceType: +req.body.maintenanceType,
+        requestorName: req.body.requestorName,
+        phoneNumber: req.body.phoneNumber,
+        email: req.body.email,
+        company: req.body.company,
+        agency: req.body.agency,
+        costCenter: req.body.costCenter,
+        costElement: req.body.costElement,
+        location: req.body.location,
+        locationDetail: req.body.locationDetail,
+        startDate: new Date(req.body.startDate),
+        description: req.body.description,
+        attachment: attachment,
+        status: 1,
+        progress: 0,
+        technicianId: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      return res.status(200).send({
+        success: true,
+        data: newMaintenance,
+        error: null,
+      });
+    }
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.updateMaintenanceRequest = async (req, res) => {
+  console.log(req.body);
+  try {
+    const {
+      idMaintenances,
+      idUser,
+      maintenanceType,
+      requestorName,
+      phoneNumber,
+      email,
+      company,
+      agency,
+      costCenter,
+      costElement,
+      location,
+      locationDetail,
+      startDate,
+      description,
+    } = req.body;
+    const updatedAt = new Date();
+    const files = req.files;
+    const image = JSON.parse(req.body.image);
+    const fileUrl = JSON.parse(req.body.fileUrl);
+    if (
+      !idMaintenances ||
+      !idUser ||
+      !maintenanceType ||
+      !requestorName ||
+      !phoneNumber ||
+      !email ||
+      !company ||
+      !agency ||
+      !costCenter ||
+      !costElement ||
+      !location ||
+      !locationDetail ||
+      !startDate ||
+      !description
+    ) {
+      return res.status(500).send({
+        success: false,
+        error: "incomplete information",
+      });
+    }
+    console.log(fileUrl);
+    const attachment = [];
+    let index = 0;
+    for (let i = 0; i < fileUrl.length; i++) {
+      if (fileUrl[i].isActive === true) {
+        attachment.push(image[i]);
+        index++;
+      } else {
+        bucketService.deleteFile(`maintenance/${image[i].path}`);
+      }
+    }
+
+    for (let i = 0; i < files.length; i++) {
+      let fileName;
+      if (index == 0) {
+        fileName =
+          "unknow" +
+          "." +
+          files[i].originalname.split(".")[
+            files[i].originalname.split(".").length - 1
+          ];
+      } else {
+        fileName =
+          "unknow" +
+          "(" +
+          index +
+          ")" +
+          "." +
+          files[i].originalname.split(".")[
+            files[i].originalname.split(".").length - 1
+          ];
+      }
+
+      bucketService.uploadFile(
+        `maintenance/${idMaintenances}/${fileName}`,
+        files[i]
+      );
+      attachment.push({
+        // fileName: files[i].originalname,
+        path: `${idMaintenances}/${fileName}`,
+      });
+
+      index++;
+    }
+    const rows = await pool.query(
+      `
+				  UPDATE Maintenances 
+				  SET idUser = ?, maintenanceType = ?, requestorName = ?, phoneNumber = ?, email = ?, company = ?, agency = ?, 
+					costCenter = ?, costElement = ?, location = ?, locationDetail = ?, startDate = ?, description = ?,updatedAt = ?,attachment = ?
+				  WHERE idMaintenances = ?`,
+      [
+        idUser,
+        maintenanceType,
+        requestorName,
+        phoneNumber,
+        email,
+        company,
+        agency,
+        costCenter,
+        costElement,
+        location,
+        locationDetail,
+        startDate,
+        description,
+        updatedAt,
+        JSON.stringify(attachment),
+        idMaintenances,
+      ]
+    );
+
+    if (rows) {
+      const newMaintenance = {
+        idMaintenances: idMaintenances,
         userId: +req.body.idUser,
         maintenanceType: +req.body.maintenanceType,
         requestorName: req.body.requestorName,

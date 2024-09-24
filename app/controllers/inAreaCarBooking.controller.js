@@ -303,6 +303,126 @@ exports.postNewInAreaCarBooking = async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 };
+
+exports.postUpdateInAreaCarBooking = async (req, res) => {
+  try {
+    const {
+      idinAreaCarBooking,
+      name,
+      telephoneMobile,
+      email,
+      flight,
+      fromPlace,
+      toPlace,
+      numberOfPassenger,
+      departureDate,
+      startTime,
+      endTime,
+      idTypeCar,
+      idVehicleBrandAndModel,
+      gaSite,
+      purpose,
+      note,
+      section,
+      department,
+      company,
+      costCenter,
+      costElement,
+      idApproved,
+      nameApproved,
+      departmentApproved,
+      companyApproved,
+      idUser,
+    } = req.body;
+
+    const init_status = "in progress";
+    const convertStartTime = convertStringDatetime(startTime);
+    const convertEndTime = convertStringDatetime(endTime);
+
+    const rows = await pool
+      .query(
+        `
+        UPDATE inAreaCarBooking
+        SET idUser = ?, name = ?, telephoneMobile = ?, email = ?, flight = ?, fromPlace = ?, toPlace = ?, numberOfPassenger = ?, departureDate = ?, startTime = ?, endTime = ?, idTypeCar = ?, idVehicleBrandAndModel = ?, gaSite = ?, purpose = ?, note = ?, section = ?, department = ?, company = ?, costCenter = ?, costElement = ?, idApprovedUser = ?, nameApproved = ?, departmentApproved = ?, companyApproved = ?, statusApproved = ?, Approved = ?, statusManageCar = ?, plate_No = ?, nameDriver = ?, idDriver = ?, statusRating = ?, idReview = ?
+        WHERE idinAreaCarBooking = ?`,
+        [
+          idUser,
+          name,
+          telephoneMobile,
+          email,
+          flight,
+          fromPlace,
+          toPlace,
+          numberOfPassenger,
+          departureDate,
+          convertStartTime,
+          convertEndTime,
+          idTypeCar,
+          idVehicleBrandAndModel,
+          gaSite,
+          purpose,
+          note,
+          section,
+          department,
+          company,
+          costCenter,
+          costElement,
+          idApproved,
+          nameApproved,
+          departmentApproved,
+          companyApproved,
+          init_status,
+          init_status,
+          init_status,
+          null,
+          null,
+          null,
+          init_status,
+          null,
+          idinAreaCarBooking,
+        ]
+      )
+      .then((rows) => {
+        if (rows) {
+          return res.status(200).send({
+            type: "success",
+            msg: "Input success",
+            returnData: {
+              idUser: idUser,
+              name: name,
+              telephoneMobile: telephoneMobile,
+              email: email,
+              flight: flight,
+              fromPlace: fromPlace,
+              toPlace: toPlace,
+              numberOfPassenger: numberOfPassenger,
+              departureDate: departureDate,
+              convertStartTime: convertStartTime,
+              convertEndTime: convertEndTime,
+              idTypeCar: idTypeCar,
+              idVehicleBrandAndModel: idVehicleBrandAndModel,
+              gaSite: gaSite,
+              purpose: purpose,
+              note: note,
+              section: section,
+              department: department,
+              company: company,
+              costCenter: costCenter,
+              costElement: costElement,
+              idApproved: idApproved,
+              nameApproved: nameApproved,
+              departmentApproved: departmentApproved,
+              companyApproved: companyApproved,
+            },
+          });
+        } else {
+          return res.status(400).send({ type: "false", msg: "Input false" });
+        }
+      });
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
 exports.postManageCarInAreaCarBooking = async (req, res) => {
   try {
     if (req.body[0].isDriverFromCompany) {

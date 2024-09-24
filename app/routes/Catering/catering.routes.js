@@ -74,6 +74,11 @@ module.exports = function (app) {
     cateringController.addRequestCatering
   );
   app.post(
+    "/api/catering/updateRequestCatering",
+    [authJwt.verifyToken],
+    cateringController.updateRequestCatering
+  );
+  app.post(
     "/api/catering/updateCostRequestCatering",
     [authJwt.verifyToken],
     cateringController.updateCostRequestCatering

@@ -777,10 +777,12 @@ exports.updateRestaurantMenu = async (req, res) => {
 exports.addRequestCatering = async (req, res) => {
   try {
     const {
+      idUser,
       name,
       phoneNumber,
       email,
       company,
+      section,
       department,
       costCenter,
       costElement,
@@ -827,14 +829,16 @@ exports.addRequestCatering = async (req, res) => {
       startTimeMinute.toString().padStart(2, "0");
 
     const result = await pool.query(
-      `INSERT INTO CateringRequest (name, phoneNumber,email,company,department,costCenter,costElement,date,time, numberOfPeople,sendTo,cateringType,objective,description,idApproved,nameApproved,companyApproved,departmentApproved,status,budget)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"pending",?)
+      `INSERT INTO CateringRequest ( idUser, name, phoneNumber,email,company,section,department,costCenter,costElement,date,time, numberOfPeople,sendTo,cateringType,objective,description,idApproved,nameApproved,companyApproved,departmentApproved,status,budget)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,"pending",?)
       `,
       [
+        idUser,
         name,
         phoneNumber,
         email,
         company,
+        section,
         department,
         costCenter,
         costElement,
@@ -869,7 +873,7 @@ exports.addRequestCatering = async (req, res) => {
           `,
           [
             resultDataId[0].idCateringRequest,
-            additionalOptionList[i].idAdditionalOption,
+            additionalOptionList[i].idCateringAdditionalOption,
             additionalOptionList[i].nameOption,
             additionalOptionList[i].costOption,
           ]
@@ -897,6 +901,105 @@ exports.addRequestCatering = async (req, res) => {
     //     );
     //   });
     // }
+
+    return res.status(200).send({
+      success: true,
+      data: result,
+      error: null,
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+exports.updateRequestCatering = async (req, res) => {
+  try {
+    const {
+      idCateringRequest,
+      name,
+      phoneNumber,
+      email,
+      company,
+      section,
+      department,
+      costCenter,
+      costElement,
+      date,
+      startTimeHour,
+      startTimeMinute,
+      numberOfPeople,
+      sendTo,
+      cateringType,
+      objective,
+      description,
+      idApproved,
+      nameApproved,
+      companyApproved,
+      departmentApproved,
+      budget,
+    } = req.body[0];
+
+    const additionalOptionList = req.body[1];
+
+    const time =
+      startTimeHour.toString().padStart(2, "0") +
+      ":" +
+      startTimeMinute.toString().padStart(2, "0");
+
+    const result = await pool.query(
+      `UPDATE CateringRequest SET name = ?, phoneNumber = ?,email = ?,company = ?,section = ?,department = ?,costCenter = ?,costElement = ?,date = ?,time = ?, numberOfPeople = ?,sendTo = ?,cateringType = ?,objective = ?,description = ?,idApproved = ?,nameApproved = ?,companyApproved = ?,departmentApproved = ?,budget = ? WHERE idCateringRequest = ?`,
+      [
+        name,
+        phoneNumber,
+        email,
+        company,
+        section,
+        department,
+        costCenter,
+        costElement,
+        date,
+        time,
+        numberOfPeople,
+        sendTo,
+        cateringType,
+        objective,
+        description,
+        idApproved,
+        nameApproved,
+        companyApproved,
+        departmentApproved,
+        budget,
+        idCateringRequest,
+      ]
+    );
+    const deleteAdditionalOption = await pool.query(
+      `DELETE FROM CateringRequestAdditionalOption WHERE idCateringRequest = ?`,
+      [idCateringRequest]
+    );
+    const resultFood = await pool.query(
+      `INSERT INTO CateringRequestAdditionalOption (idCateringRequest,idCateringAdditionalOption,nameOption,costOption)
+        VALUES (?,?,?,?)
+      `,
+      [idCateringRequest, null, "ค่าอาหาร", parseInt(budget)]
+    );
+    if (additionalOptionList.length > 0) {
+      for (let i = 0; i < additionalOptionList.length; i++) {
+        const resultAdditionalOption = await pool.query(
+          `INSERT INTO CateringRequestAdditionalOption (idCateringRequest,idCateringAdditionalOption,nameOption,costOption)
+            VALUES (?,?,?,?)
+          `,
+          [
+            idCateringRequest,
+            additionalOptionList[i].idCateringAdditionalOption,
+            additionalOptionList[i].nameOption,
+            additionalOptionList[i].costOption,
+          ]
+        );
+      }
+    }
 
     return res.status(200).send({
       success: true,

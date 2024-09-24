@@ -58,6 +58,11 @@ module.exports = function (app) {
     InAreaCarBookingController.postNewInAreaCarBooking
   );
   app.post(
+    "/api/post_Update_In_Area_Car_Booking",
+    [authJwt.verifyToken],
+    InAreaCarBookingController.postUpdateInAreaCarBooking
+  );
+  app.post(
     "/api/manage_car_in_area_car_booking",
     [authJwt.verifyToken],
     InAreaCarBookingController.postManageCarInAreaCarBooking

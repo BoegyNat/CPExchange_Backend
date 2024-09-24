@@ -210,6 +210,86 @@ exports.postNewDeliveryCarBooking = async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 };
+
+exports.postUpdateDeliveryCarBooking = async (req, res) => {
+  try {
+    const {
+      idDeliveryCarBooking,
+      idUser,
+      name,
+      telephoneMobile,
+      email,
+      section,
+      department,
+      weightProduct,
+      detail,
+      fromPlace,
+      toPlace,
+      nameRecipient,
+      telephoneMobileRecipient,
+      idTypeVehicle,
+      idVehicleBrandAndModel,
+      typeProduct,
+      purpose,
+      date,
+      startTime,
+      endTime,
+      imageVehicle,
+      costBooking,
+      note,
+      nameDriver,
+      plate_No,
+      statusApproved,
+      statusManageCar,
+    } = req.body[0];
+    const convertStartTime = convertStringDatetime(startTime);
+    const convertEndTime = convertStringDatetime(endTime);
+    // console.log(convertStartTime, convertEndTime)
+
+    // console.log("log data", idUser, name, telephoneMobile, email, weightProduct,detail, fromPlace, toPlace, nameRecipient, telephoneMobileRecipient, idTypeVehicle, idVehicleBrandAndModel, typeProduct,
+    // purpose, date, startTime, endTime, imageVehicle, costBooking)
+    const rows = await pool.query(
+      "UPDATE DeliveryCarBooking SET idUser = ?, idTypeVehicle = ?, idVehicleBrandAndModel = ?, name = ?, telephoneMobile = ?, email = ?, section = ?, department = ?, nameDriver = ?, nameRecipient = ?, telephoneMobileRecipient = ?, note = ?, plate_No = ?, purpose = ?, statusApproved = ?, statusManageCar = ?, toPlace = ?, fromPlace = ?, typeProduct = ?, weightProduct = ?, date = ?, startTime = ?, endTime = ?, detail = ?, imageVehicle = ?, costBooking = ? WHERE idDeliveryCarBooking = ? ",
+      [
+        idUser,
+        idTypeVehicle,
+        idVehicleBrandAndModel,
+        name,
+        telephoneMobile,
+        email,
+        section,
+        department,
+        nameDriver,
+        nameRecipient,
+        telephoneMobileRecipient,
+        note,
+        plate_No,
+        purpose,
+        statusApproved,
+        statusManageCar,
+        toPlace,
+        fromPlace,
+        typeProduct,
+        weightProduct,
+        date,
+        convertStartTime,
+        convertEndTime,
+        detail,
+        imageVehicle,
+        costBooking,
+        idDeliveryCarBooking,
+      ]
+    );
+
+    if (rows) {
+      res.status(200).send(rows);
+    } else {
+      res.status(400).send("Failed Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
 exports.postManageCarDeliveryCarBooking = async (req, res) => {
   try {
     if (req.body.isDriverFromCompany) {

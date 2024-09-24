@@ -16,6 +16,16 @@ module.exports = function (app) {
     [authJwt.verifyToken, upload.array("attachment")],
     MeetingRoomController.postNewMeetingRoom
   );
+  app.post(
+    "/api/update_new_meeting_room",
+    [authJwt.verifyToken, upload.array("attachment")],
+    MeetingRoomController.postUpdateNewMeetingRoom
+  );
+  app.get(
+    "/api/delete_new_meeting_room/:id",
+    [authJwt.verifyToken],
+    MeetingRoomController.getDeleteNewMeetingRoomById
+  );
   app.get(
     "/api/all_new_meeting_room",
     [authJwt.verifyToken],
@@ -36,6 +46,11 @@ module.exports = function (app) {
     [authJwt.verifyToken],
     MeetingRoomController.postNewMeetingRoomBooking
   );
+  app.post(
+    "/api/update_meeting_room_booking",
+    [authJwt.verifyToken],
+    MeetingRoomController.postUpdateMeetingRoomBooking
+  );
   app.get(
     "/api/get_meeting_room_booking_byIdUser/:idUser",
     [authJwt.verifyToken],
@@ -45,6 +60,11 @@ module.exports = function (app) {
     "/api/all_new_meeting_room_booking",
     [authJwt.verifyToken],
     MeetingRoomController.getAllNewMeetingRoomBooking
+  );
+  app.get(
+    "/api/all_new_meeting_room_booking_is_not_finish",
+    [authJwt.verifyToken],
+    MeetingRoomController.getAllNewMeetingRoomBookingIsNotFinish
   );
   app.post(
     "/api/all_new_meeting_room_booking_and_all_meeting_room",

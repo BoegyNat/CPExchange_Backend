@@ -51,6 +51,11 @@ module.exports = function (app) {
     DeliveryCarBookingController.postNewDeliveryCarBooking
   );
   app.post(
+    "/api/delivery_car_update_booking",
+    [authJwt.verifyToken],
+    DeliveryCarBookingController.postUpdateDeliveryCarBooking
+  );
+  app.post(
     "/api/manage_car_delivery_car_booking",
     [authJwt.verifyToken],
     DeliveryCarBookingController.postManageCarDeliveryCarBooking

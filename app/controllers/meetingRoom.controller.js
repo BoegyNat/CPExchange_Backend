@@ -78,9 +78,9 @@ exports.postNewMeetingRoom = async (req, res) => {
       `
         INSERT INTO 
         NewMeetingRoom 
-            (nameMeetingRoom, place, province, numberOfPeople, detail, nameManager, phoneManager, emailManager, facilities, price, priceAllDay,imagePath) 
+            (nameMeetingRoom, place, province, numberOfPeople, detail, nameManager, phoneManager, emailManager, facilities, price, priceAllDay,imagePath,isActive) 
         VALUES 
-          (?,?,?,?,?,?,?,?,?,?,?,?)`,
+          (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         nameMeetingRoom,
         place,
@@ -94,6 +94,7 @@ exports.postNewMeetingRoom = async (req, res) => {
         price,
         priceAllDay,
         JSON.stringify(attachment),
+        1,
       ]
     );
     console.log(rows);
@@ -117,6 +118,173 @@ exports.postNewMeetingRoom = async (req, res) => {
     //     [val, dataId[0].idNewMeetingRoom]
     //   );
     // }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.postUpdateNewMeetingRoom = async (req, res) => {
+  const {
+    idNewMeetingRoom,
+    nameMeetingRoom,
+    place,
+    province,
+    numberOfPeople,
+    detail,
+    nameManager,
+    phoneManager,
+    emailManager,
+    price,
+    priceAllDay,
+    fileUrl,
+    imagePath,
+  } = JSON.parse(req.body.data);
+  // console.log(req.body.data, req.files);
+  const files = req.files;
+
+  try {
+    const attachment = [];
+    // console.log(
+    //   lastedNewMeetingRoom[0].idNewMeetingRoom,
+    //   nameMeetingRoom,
+    //   place,
+    //   province,
+    //   numberOfPeople,
+    //   detail,
+    //   nameApproved,
+    //   phone,
+    //   email,
+    //   price,
+    //   req.body.fields
+    // );
+    let index = 0;
+    for (let i = 0; i < fileUrl.length; i++) {
+      if (fileUrl[i].isActive) {
+        attachment.push({
+          path: imagePath[i].path,
+        });
+        index++;
+      } else {
+        bucketService.deleteFile(`meetingroom/${imagePath[i].path}`);
+      }
+    }
+
+    for (let i = 0; i < files.length; i++) {
+      let fileName;
+      if (index == 0) {
+        fileName =
+          "unknow" +
+          "." +
+          files[i].originalname.split(".")[
+            files[i].originalname.split(".").length - 1
+          ];
+      } else {
+        fileName =
+          "unknow" +
+          "(" +
+          index +
+          ")" +
+          "." +
+          files[i].originalname.split(".")[
+            files[i].originalname.split(".").length - 1
+          ];
+      }
+
+      bucketService.uploadFile(
+        `meetingroom/${idNewMeetingRoom}/${fileName}`,
+        files[i]
+      );
+      attachment.push({
+        // fileName: files[i].originalname,
+        path: `${idNewMeetingRoom}/${fileName}`,
+      });
+      index++;
+    }
+    const rows = await pool.query(
+      `
+        UPDATE NewMeetingRoom SET
+          nameMeetingRoom = ?,
+          place = ?,
+          province = ?,
+          numberOfPeople = ?,
+          detail = ?,
+          nameManager = ?,
+          phoneManager = ?,
+          emailManager = ?,
+          facilities = ?,
+          price = ?,
+          priceAllDay = ?,
+          imagePath = ?,
+          isActive = ?
+        WHERE idNewMeetingRoom = ?
+      `,
+      [
+        nameMeetingRoom,
+        place,
+        province,
+        numberOfPeople,
+        detail,
+        nameManager,
+        phoneManager,
+        emailManager,
+        req.body.fields,
+        price,
+        priceAllDay,
+        JSON.stringify(attachment),
+        1,
+        idNewMeetingRoom,
+      ]
+    );
+
+    console.log(rows);
+    if (rows.affectedRows > 0) {
+      res.status(200).send({ message: "Success" });
+    } else {
+      res.status(204).send({ message: "Fail" });
+    }
+    // const dataId = await pool.query(
+    //   "SELECT idNewMeetingRoom FROM NewMeetingRoom ORDER BY idNewMeetingRoom DESC LIMIT 1;"
+    // );
+
+    // for (const val of req.body[2]) {
+    //   const row = await pool.query(
+    //     `
+    //         INSERT INTO
+    //         NewMeetingRoomImage
+    //             (imageBase64, idNewMeetingRoom)
+    //         VALUES
+    //           (?,?)`,
+    //     [val, dataId[0].idNewMeetingRoom]
+    //   );
+    // }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getDeleteNewMeetingRoomById = async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT isActive FROM NewMeetingRoom WHERE idNewMeetingRoom = ?",
+      [req.params.id]
+    );
+    let rows;
+    if (result[0].isActive == 1) {
+      rows = await pool.query(
+        "UPDATE NewMeetingRoom SET isActive = 0 WHERE idNewMeetingRoom = ?",
+        [req.params.id]
+      );
+    } else {
+      rows = await pool.query(
+        "UPDATE NewMeetingRoom SET isActive = 1 WHERE idNewMeetingRoom = ?",
+        [req.params.id]
+      );
+    }
+    if (rows.affectedRows > 0) {
+      res.status(200).send({ message: "Success" });
+    } else {
+      res.status(204).send({ message: "Fail" });
+    }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
@@ -159,8 +327,8 @@ exports.postNewMeetingRoomBooking = async (req, res) => {
         nameUser,
         phoneUser,
         emailUser,
-        new Date(startDate + ", " + timeStart).toString(),
-        new Date(endDate + ", " + timeEnd).toString(),
+        new Date(startDate),
+        new Date(endDate),
         timeStart,
         timeEnd,
         numOfPeople,
@@ -169,7 +337,56 @@ exports.postNewMeetingRoomBooking = async (req, res) => {
         idMeetingRoom,
       ]
     );
-    console.log(rows);
+    if (rows.affectedRows > 0) {
+      res.status(200).send({ message: "Success" });
+    } else {
+      res.status(204).send({ message: "Fail" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.postUpdateMeetingRoomBooking = async (req, res) => {
+  try {
+    const {
+      idNewMeetingRoomBooking,
+      nameUser,
+      phoneUser,
+      emailUser,
+      startDate,
+      endDate,
+      timeStart,
+      timeEnd,
+      numOfPeople,
+      isBookAllDay,
+      totalPrice,
+      idMeetingRoom,
+    } = req.body[0];
+
+    const rows = await pool.query(
+      `
+        UPDATE NewMeetingRoomBooking 
+        SET
+          nameUser = ?,
+          phoneUser = ?,
+          emailUser = ?, startDate = ?, endDate = ?, timeStart = ?, timeEnd = ?, numOfPeople = ?, isBookAllDay = ?, totalPrice = ?, idMeetingRoom = ?
+        WHERE idNewMeetingRoomBooking = ?`,
+      [
+        nameUser,
+        phoneUser,
+        emailUser,
+        new Date(startDate),
+        new Date(endDate),
+        timeStart,
+        timeEnd,
+        numOfPeople,
+        isBookAllDay,
+        totalPrice,
+        idMeetingRoom,
+        idNewMeetingRoomBooking,
+      ]
+    );
     if (rows.affectedRows > 0) {
       res.status(200).send({ message: "Success" });
     } else {
@@ -282,6 +499,21 @@ exports.getMeetingRoomBookingByIdUser = async (req, res) => {
 exports.getAllNewMeetingRoomBooking = async (req, res) => {
   try {
     const row = await pool.query("SELECT * FROM NewMeetingRoomBooking");
+    if (row.length > 0) {
+      res.status(200).send(row);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getAllNewMeetingRoomBookingIsNotFinish = async (req, res) => {
+  try {
+    const row = await pool.query(
+      "SELECT * FROM NewMeetingRoomBooking WHERE endDate > NOW();"
+    );
     if (row.length > 0) {
       res.status(200).send(row);
     } else {

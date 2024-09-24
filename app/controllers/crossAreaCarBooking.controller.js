@@ -401,6 +401,123 @@ exports.postNewCrossAreaCarBooking = async (req, res) => {
   }
 };
 
+exports.postUpdateCrossAreaCarBooking = async (req, res) => {
+  const {
+    idCrossAreaCarBooking,
+    idUser,
+    name,
+    telephoneMobile,
+    email,
+    section,
+    department,
+    flight,
+    fromPlace,
+    toPlace,
+    fromPlaceReturn,
+    toPlaceReturn,
+    numberOfPassenger,
+    numberOfPassengerReturn,
+    departureDate,
+    startTime,
+    endTime,
+    returnDate,
+    returnStartTime,
+    returnEndTime,
+    idVehicleBrandAndModel,
+    purpose,
+    idApproved,
+    totalPrice,
+  } = req.body[0];
+
+  try {
+    const rows = await pool.query(
+      `
+              UPDATE CrossAreaCarBooking 
+              SET name = ?, telephoneMobile = ?, email = ?, section = ?, department = ?, flight = ?, fromPlace = ?, toPlace = ?, fromPlaceReturn = ?, 
+              toPlaceReturn = ?, numberOfPassenger = ?, numberOfPassengerReturn = ?,  departureDate = ?, startTime = ?, endTime = ?, returnDate = ?, returnStartTime = ?, returnEndTime = ?, purpose = ?, idVehicleBrandAndModel = ?, idUser = ?, idApproved = ?, totalPrice = ?
+              WHERE idCrossAreaCarBooking = ?`,
+      [
+        name,
+        telephoneMobile,
+        email,
+        section,
+        department,
+        flight,
+        fromPlace,
+        toPlace,
+        fromPlaceReturn,
+        toPlaceReturn,
+        numberOfPassenger,
+        numberOfPassengerReturn,
+        departureDate,
+        startTime,
+        endTime,
+        returnDate,
+        returnStartTime,
+        returnEndTime,
+        purpose,
+        idVehicleBrandAndModel,
+        idUser,
+        idApproved,
+        totalPrice,
+        idCrossAreaCarBooking,
+      ]
+    );
+
+    const row = await pool.query(
+      "DELETE FROM CrossAreaCarPassenger WHERE idCrossAreaCar = ?",
+      [idCrossAreaCarBooking]
+    );
+
+    let success_Passenger = true;
+    let index = 0;
+    for (const data of Object.values(req.body[0].listPassenger)) {
+      if (index < parseInt(numberOfPassenger)) {
+        const namePassenger = data.name;
+        const companyPassenger = data.company;
+        const phonePassenger = data.telephoneMobile;
+        const emailPassenger = data.email;
+        const costCenter = data.costCenter;
+        const costElement = data.costElement;
+        const fromPlacePassenger = data.fromPlace;
+        const fromPlaceReturnPassenger = data.fromPlaceReturn;
+        const idCrossAreaCar = idCrossAreaCarBooking;
+
+        const field = await pool.query(
+          `
+          INSERT INTO CrossAreaCarPassenger (
+             name, company, telephoneMobile, email, costCenter, costElement, fromPlace, fromPlaceReturn, idCrossAreaCar
+          ) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+            namePassenger,
+            companyPassenger,
+            phonePassenger,
+            emailPassenger,
+            costCenter,
+            costElement,
+            fromPlacePassenger,
+            fromPlaceReturnPassenger,
+            idCrossAreaCar,
+          ]
+        );
+
+        if (!field) {
+          success_Passenger = false;
+        }
+        index++;
+      }
+    }
+    if (rows && success_Passenger) {
+      res.status(200).send(rows);
+    } else {
+      res.status(400).send("Failed Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
 exports.postManageCarCrossAreaCarBooking = async (req, res) => {
   try {
     if (req.body.isDriverFromCompany) {

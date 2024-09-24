@@ -14,6 +14,11 @@ module.exports = function (app) {
     [authJwt.verifyToken],
     DriverController.postNewDriverBooking
   );
+  app.post(
+    "/api/update_driver_booking",
+    [authJwt.verifyToken],
+    DriverController.updateDriverBooking
+  );
   app.get(
     "/api/all_new_driver_booking",
     [authJwt.verifyToken],

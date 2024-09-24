@@ -30,6 +30,12 @@ module.exports = function (app) {
     maintenanceController.addNewMaintenanceRequest
   );
 
+  app.post(
+    "/api/maintenances/update",
+    [authJwt.verifyToken, upload.array("attachment")],
+    maintenanceController.updateMaintenanceRequest
+  );
+
   //get my requested maintenances
   app.get(
     "/api/maintenances/getAllHistory",

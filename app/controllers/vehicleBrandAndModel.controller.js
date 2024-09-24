@@ -42,15 +42,19 @@ exports.allVehicleBrandsAndModelsByIdTypeCar = (req, res) => {
   }
 };
 
-exports.getVehicleBrandAndModelById = (req, res) => {
+exports.getVehicleBrandAndModelById = async (req, res) => {
   try {
-    let result = VehicleBrandsAndModels.find(
-      (vehibrand) => vehibrand.id == req.params.Id
+    const result = await pool.query(
+      "SELECT * FROM VehicleBrandsAndModels LEFT JOIN VehicleTypes ON VehicleBrandsAndModels.idType = VehicleTypes.idVehicleTypes WHERE idVehicleBrandsAndModels = ?",
+      [req.params.Id]
     );
-    let TypeCar = VehicleTypes.find((typeVehi) => typeVehi.id == result.idType);
-    result.vehicleTypeNameEN = TypeCar.vehicleTypeNameEN;
-    result.vehicleTypeNameTH = TypeCar.vehicleTypeNameTH;
-    res.status(200).send(result);
+    console.log(result);
+
+    if (result.length > 0) {
+      res.status(200).send(result);
+    } else {
+      res.status(404).send("Not Found");
+    }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }

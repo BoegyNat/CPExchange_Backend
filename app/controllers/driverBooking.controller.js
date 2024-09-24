@@ -65,6 +65,64 @@ exports.postNewDriverBooking = async (req, res) => {
   }
 };
 
+exports.updateDriverBooking = async (req, res) => {
+  const {
+    idDriverBooking,
+    namePlaceFrom,
+    namePlaceTo,
+    namePlaceFromReturn,
+    namePlaceToReturn,
+    startDate,
+    startTime,
+    endDate,
+    endTime,
+    startDateReturn,
+    startTimeReturn,
+    endDateReturn,
+    endTimeReturn,
+    twoWay,
+    note,
+    detailJourney,
+    option,
+  } = req.body[0];
+
+  try {
+    const rows = await pool.query(
+      `
+          UPDATE DriverBooking 
+          SET 
+            namePlaceFrom = ?, namePlaceTo = ?, namePlaceFromReturn = ?, namePlaceToReturn = ?, startDate = ?, startTime = ?, endDate = ?, endTime = ?, startDateReturn = ?, startTimeReturn = ?, endDateReturn = ?, endTimeReturn = ?, detailJourney = ?, note = ?, twoWay = ?,   addOption = ?
+          WHERE idDriverBooking = ?`,
+      [
+        namePlaceFrom,
+        namePlaceTo,
+        namePlaceFromReturn,
+        namePlaceToReturn,
+        startDate,
+        startTime,
+        endDate,
+        endTime,
+        startDateReturn,
+        startTimeReturn,
+        endDateReturn,
+        endTimeReturn,
+        detailJourney,
+        note,
+        twoWay,
+        option,
+        idDriverBooking,
+      ]
+    );
+    if (rows.affectedRows > 0) {
+      res.status(200).send(rows);
+    } else {
+      res.status(404).send("Error");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
 exports.getAllNewDriverBooking = async (req, res) => {
   try {
     const data = await pool.query(
