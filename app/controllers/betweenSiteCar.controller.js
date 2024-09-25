@@ -358,7 +358,7 @@ exports.getBetweenSiteWithRouteDate = async (req, res) => {
     if (result.length > 0) {
       for (let index = 0; index < result.length; index++) {
         const user = await pool.query(
-          "SELECT firstname_TH,lastname_TH FROM UniHR.Employees WHERE idEmployees = ?",
+          "SELECT firstname_TH,lastname_TH, telephoneMobile, email , departmentName, sectionName, companyName FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany  WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL)",
           [result[index].idUser]
         );
         const driver = await pool.query(
