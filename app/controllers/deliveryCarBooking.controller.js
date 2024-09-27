@@ -94,7 +94,7 @@ exports.getDeliveryCarBookingByIdUserForRating = async (req, res) => {
 exports.getDeliveryCarBookingByStartDate = async (req, res) => {
   try {
     const row = await pool.query(
-      "SELECT * FROM DeliveryCarBooking WHERE date > ?",
+      "SELECT * FROM DeliveryCarBooking dc LEFT JOIN Vehicle v ON v.idVehicle = dc.idVehicle LEFT JOIN VehicleBrandsAndModels vbm ON vbm.idVehicleBrandsAndModels = v.idVehicleBrandAndModel WHERE date > ?",
       [req.body.startDate]
     );
 
@@ -111,7 +111,7 @@ exports.getDeliveryCarBookingByStartDate = async (req, res) => {
 exports.getDeliveryCarBookingByStartDateAndEndDate = async (req, res) => {
   try {
     const row = await pool.query(
-      "SELECT * FROM DeliveryCarBooking WHERE date BETWEEN ? AND ?",
+      "SELECT * FROM DeliveryCarBooking dc LEFT JOIN Vehicle v ON v.idVehicle = dc.idVehicle LEFT JOIN VehicleBrandsAndModels vbm ON vbm.idVehicleBrandsAndModels = v.idVehicleBrandAndModel WHERE date BETWEEN ? AND ?",
       [req.body.startDate, req.body.endDate]
     );
 

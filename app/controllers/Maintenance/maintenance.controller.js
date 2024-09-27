@@ -478,26 +478,28 @@ exports.getAllMaintenanceRequest = async (req, res) => {
     if (result) {
       return res.status(200).send({
         success: true,
-        data: result.map((x) => {
-          const {
-            idMaintenances,
-            idUser,
-            maintenanceType,
-            location,
-            createdAt,
-            startDate,
-            status,
-          } = x;
-          return {
-            idMaintenances,
-            idUser,
-            maintenanceType,
-            location,
-            createdAt,
-            startDate,
-            status,
-          };
-        }),
+        data: result,
+        // .map((x) => {
+        //   const {
+        //     idMaintenances,
+        //     idUser,
+        //     maintenanceType,
+        //     location,
+        //     createdAt,
+        //     startDate,
+        //     status,
+        //   } = x;
+        //   return {
+        //     idMaintenances,
+        //     idUser,
+        //     maintenanceType,
+        //     location,
+        //     createdAt,
+        //     startDate,
+        //     status,
+        //   };
+        // })
+
         error: null,
       });
     } else {

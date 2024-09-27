@@ -204,7 +204,7 @@ exports.getCrossAreaCarBookingByIdApprovedUserForManager = async (req, res) => {
 
 exports.getCrossAreaCarBookingByStartDate = async (req, res) => {
   try {
-    const data = await pool.query(
+    let data = await pool.query(
       "SELECT * FROM CrossAreaCarBooking WHERE departureDate >= ?",
       [req.body.startDate]
     );
@@ -214,7 +214,15 @@ exports.getCrossAreaCarBookingByStartDate = async (req, res) => {
       "SELECT * FROM VehicleBrandsAndModels"
     );
 
-    data.map((booking) => {
+    for (let booking of data) {
+      const Approver = await pool.query(
+        "SELECT firstname_TH, lastname_TH, departmentName, companyName FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+        [booking.idApproved]
+      );
+
+      if (Approver.length > 0) {
+        booking.Approver = Approver[0];
+      }
       if (booking.isDriverFromCompany) {
         let type = vehicleTypes.find(
           (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
@@ -233,7 +241,7 @@ exports.getCrossAreaCarBookingByStartDate = async (req, res) => {
         booking.breakABS = brandAndModel.breakABS;
         booking.imagepath = brandAndModel.imagepath;
       }
-    });
+    }
     if (data.length > 0) {
       res.status(200).send(data);
     } else {
@@ -256,7 +264,15 @@ exports.getCrossAreaCarBookingByStartDateAndEndDate = async (req, res) => {
       "SELECT * FROM VehicleBrandsAndModels"
     );
 
-    result.map((booking) => {
+    for (let booking of result) {
+      const Approver = await pool.query(
+        "SELECT firstname_TH, lastname_TH, departmentName, companyName FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+        [booking.idApproved]
+      );
+
+      if (Approver.length > 0) {
+        booking.Approver = Approver[0];
+      }
       if (booking.isDriverFromCompany) {
         let type = vehicleTypes.find(
           (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
@@ -275,7 +291,7 @@ exports.getCrossAreaCarBookingByStartDateAndEndDate = async (req, res) => {
         booking.breakABS = brandAndModel.breakABS;
         booking.imagepath = brandAndModel.imagepath;
       }
-    });
+    }
     if (result.length > 0) {
       res.status(200).send(result);
     } else {

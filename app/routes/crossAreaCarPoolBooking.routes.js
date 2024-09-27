@@ -35,9 +35,27 @@ module.exports = function (app) {
   );
 
   app.post(
+    "/api/cross_area_car_pool_booking_ByStartDate",
+    [authJwt.verifyToken],
+    CrossAreaCarPoolBookingController.getCrossAreaCarPoolBookingByStartDate
+  );
+
+  app.post(
+    "/api/cross_area_car_pool_booking_ByStartDateAndEndDate",
+    [authJwt.verifyToken],
+    CrossAreaCarPoolBookingController.getCrossAreaCarPoolBookingByStartDateAndEndDate
+  );
+
+  app.post(
     "/api/add_newcross_area_car_pool_booking",
     [authJwt.verifyToken],
     CrossAreaCarPoolBookingController.postNewCrossAreaCarPoolBooking
+  );
+
+  app.post(
+    "/api/update_cross_area_car_pool_booking",
+    [authJwt.verifyToken],
+    CrossAreaCarPoolBookingController.postUpdateCrossAreaCarPoolBooking
   );
   app.post(
     "/api/approved_cross_area_car_pool_booking",

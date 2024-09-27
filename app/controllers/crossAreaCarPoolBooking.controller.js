@@ -55,6 +55,100 @@ exports.getCrossAreaCarPoolBookingByIdUser = async (req, res) => {
   }
 };
 
+exports.getCrossAreaCarPoolBookingByStartDate = async (req, res) => {
+  try {
+    let data = await pool.query(
+      "SELECT * FROM CrossAreaCarPoolBooking WHERE departureDate >= ?",
+      [req.body.startDate]
+    );
+
+    const vehicles = await pool.query(
+      "SELECT * FROM Vehicle v LEFT JOIN VehicleBrandsAndModels vbm ON vbm.idVehicleBrandsAndModels = v.idVehicleBrandAndModel"
+    );
+    for (let booking of data) {
+      const routes = await pool.query(
+        "SELECT * FROM routeCrossAreaCarPools WHERE routeLine = ?",
+        [booking.idCrossAreaCarPoolBooking]
+      );
+      for (let route of routes) {
+        const passenger = await pool.query(
+          "SELECT * FROM CrossAreaCarPoolBookingPassenger WHERE idCrossAreaCarPoolBookingPassenger = ?",
+          [route.idCrossAreaCarPoolBookingPassenger]
+        );
+        route.detail = passenger[0];
+      }
+      if (routes.length > 0) {
+        booking.idDriver = routes[0].idDriver;
+        booking.nameDriver = routes[0].nameDriver;
+        booking.phoneDriver = routes[0].phoneDriver;
+        booking.isDriverFromCompany = routes[0].isDriverFromCompany;
+        booking.plate_No = routes[0].plate_No;
+        booking.idVehicle = routes[0].idVehicle;
+        booking.statusManageCar = routes[0].statusManageCar;
+        const vehicle = vehicles.filter(
+          (vehicle) => vehicle.idVehicle == routes[0].idVehicle
+        );
+        booking.vehicle = vehicle[0];
+      }
+
+      booking.routes = routes;
+    }
+    if (data.length > 0) {
+      res.status(200).send(data);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getCrossAreaCarPoolBookingByStartDateAndEndDate = async (req, res) => {
+  try {
+    let result = await pool.query(
+      "SELECT * FROM CrossAreaCarPoolBooking WHERE departureDate BETWEEN ? AND ?",
+      [req.body.startDate, req.body.endDate]
+    );
+    const vehicles = await pool.query(
+      "SELECT * FROM Vehicle v LEFT JOIN VehicleBrandsAndModels vbm ON vbm.idVehicleBrandsAndModels = v.idVehicleBrandAndModel"
+    );
+
+    for (let booking of result) {
+      const routes = await pool.query(
+        "SELECT * FROM routeCrossAreaCarPools WHERE routeLine = ?",
+        [booking.idCrossAreaCarPoolBooking]
+      );
+      for (let route of routes) {
+        const passenger = await pool.query(
+          "SELECT * FROM CrossAreaCarPoolBookingPassenger WHERE idCrossAreaCarPoolBookingPassenger = ?",
+          [route.idCrossAreaCarPoolBookingPassenger]
+        );
+        route.detail = passenger[0];
+      }
+      booking.idDriver = routes[0].idDriver;
+      booking.nameDriver = routes[0].nameDriver;
+      booking.phoneDriver = routes[0].phoneDriver;
+      booking.isDriverFromCompany = routes[0].isDriverFromCompany;
+      booking.plate_No = routes[0].plate_No;
+      booking.idVehicle = routes[0].idVehicle;
+      booking.statusManageCar = routes[0].statusManageCar;
+      const vehicle = vehicles.filter(
+        (vehicle) => vehicle.idVehicle == routes[0].idVehicle
+      );
+      booking.vehicle = vehicle[0];
+
+      booking.routes = routes;
+    }
+    if (result.length > 0) {
+      res.status(200).send(result);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
 exports.getCrossAreaCarPoolBookingByIdDriver = async (req, res) => {
   try {
     const routes = await pool.query(
@@ -134,6 +228,7 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
     toPlaceReturn,
     numberOfPassenger,
     departureDate,
+    returnDate,
     numberOfPassengerReturn,
   } = req.body;
 
@@ -144,9 +239,9 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
         CrossAreaCarPoolBooking 
             (idUser, name, telephoneMobile, email, section, department, flight, fromPlace, 
             toPlace, numberOfPassenger, departureDate, fromPlaceReturn,
-              toPlaceReturn, numberOfPassengerReturn) 
+              toPlaceReturn, numberOfPassengerReturn, returnDate) 
         VALUES 
-          (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+          (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         idUser,
         name,
@@ -159,9 +254,10 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
         toPlace,
         numberOfPassenger,
         new Date(departureDate),
-        fromPlaceReturn,
-        toPlaceReturn,
-        numberOfPassengerReturn,
+        flight == "twoWay" ? fromPlaceReturn : null,
+        flight == "twoWay" ? toPlaceReturn : null,
+        flight == "twoWay" ? numberOfPassengerReturn : null,
+        flight == "twoWay" ? new Date(returnDate) : null,
       ]
     );
     const row = await pool.query(
@@ -183,6 +279,7 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
       const endTime = data.endTime;
       const purpose = data.purpose;
       const noteDeparture = data.noteDeparture;
+      const noteReturn = data.noteReturn;
       const fromPlaceReturn = data.fromPlaceReturn;
       const toPlaceReturn = data.toPlaceReturn;
       const roundTimeReturn = data.roundTimeReturn;
@@ -193,9 +290,9 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
                   INSERT INTO 
                   CrossAreaCarPoolBookingPassenger 
                       (idCrossAreaCarPoolBooking, idUser, name,telephoneMobile, email, department, company, costCenter,
-                        costElement, fromPlace, toPlace, roundTime, endTime, purpose, noteDeparture, fromPlaceReturn, toPlaceReturn, roundTimeReturn, endTimeReturn) 
+                        costElement, fromPlace, toPlace, roundTime, endTime, purpose, noteDeparture, fromPlaceReturn, toPlaceReturn, roundTimeReturn, endTimeReturn,noteReturn) 
                   VALUES 
-                      (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                      (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
           idCrossAreaCarPool,
           idUser,
@@ -216,6 +313,153 @@ exports.postNewCrossAreaCarPoolBooking = async (req, res) => {
           toPlaceReturn,
           roundTimeReturn,
           endTimeReturn,
+          noteReturn,
+        ]
+      );
+      const resdataid = await pool.query(
+        "SELECT * FROM CrossAreaCarPoolBookingPassenger  ORDER BY idCrossAreaCarPoolBookingPassenger DESC LIMIT 1"
+      );
+      const resdataUser = await pool.query(
+        "SELECT latAddress as lat, lngAddress as lng FROM UniHR.Employees  where idEmployees = ?",
+        [idUser]
+      );
+
+      const res = await pool.query(
+        `
+                INSERT INTO 
+                routeCrossAreaCarPools 
+                    (idCrossAreaCarPoolBookingPassenger, createDate, idUser, routeDate, routeLine, latUser, lngUser,  routeTimeOptimized, idDriver, idVehicle, routeStatus, statusGetting, routeCrossAreaCarPoolscol, point, comment) 
+                VALUES 
+                    (?,?,?,?,?,?,?,null,null,null,null,null,null,null,null)`,
+        [
+          resdataid[0].idCrossAreaCarPoolBookingPassenger,
+          new Date(),
+          idUser,
+          new Date(departureDate),
+          idCrossAreaCarPool,
+          resdataUser[0].lat,
+          resdataUser[0].lng,
+        ]
+      );
+      if (!res || !field) {
+        success_Passenger = false;
+      }
+    }
+    if (success_Passenger && rows) {
+      res.status(200).send(rows);
+    } else {
+      res.status(400).send("Failed Booking");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.postUpdateCrossAreaCarPoolBooking = async (req, res) => {
+  const {
+    idCrossAreaCarPoolBooking,
+    idUser,
+    name,
+    telephoneMobile,
+    email,
+    section,
+    department,
+    flight,
+    fromPlace,
+    toPlace,
+    fromPlaceReturn,
+    toPlaceReturn,
+    numberOfPassenger,
+    departureDate,
+    returnDate,
+    numberOfPassengerReturn,
+  } = req.body;
+
+  try {
+    const rows = await pool.query(
+      `
+        UPDATE CrossAreaCarPoolBooking 
+        SET idUser = ?, name = ?, telephoneMobile = ?, email = ?, section = ?, department = ?, flight = ?, fromPlace = ?, toPlace = ?, numberOfPassenger = ?, departureDate = ?, fromPlaceReturn = ?, toPlaceReturn = ?, numberOfPassengerReturn = ?, returnDate = ?
+        WHERE idCrossAreaCarPoolBooking = ?`,
+      [
+        idUser,
+        name,
+        telephoneMobile,
+        email,
+        section,
+        department,
+        flight,
+        fromPlace,
+        toPlace,
+        numberOfPassenger,
+        new Date(departureDate),
+        flight == "twoWay" ? fromPlaceReturn : null,
+        flight == "twoWay" ? toPlaceReturn : null,
+        flight == "twoWay" ? numberOfPassengerReturn : null,
+        flight == "twoWay" ? new Date(returnDate) : null,
+        idCrossAreaCarPoolBooking,
+      ]
+    );
+    const delete_route = await pool.query(
+      "DELETE FROM routeCrossAreaCarPools WHERE routeLine = ?",
+      [idCrossAreaCarPoolBooking]
+    );
+    const delete_passenger = await pool.query(
+      "DELETE FROM CrossAreaCarPoolBookingPassenger WHERE idCrossAreaCarPoolBooking = ?",
+      [idCrossAreaCarPoolBooking]
+    );
+
+    let success_Passenger = true;
+    for (const data of Object.values(req.body.listPassenger)) {
+      const namePassenger = data.name;
+      const departmentPassenger = data.option.departmentName;
+      const companyPassenger = data.company;
+      const phonePassenger = data.telephoneMobile;
+      const emailPassenger = data.email;
+      const costCenter = data.costCenter;
+      const costElement = data.costElement;
+      const fromPlacePassenger = data.fromPlace;
+      const idUser = data.option.idEmployees;
+      const toPlace = data.toPlace;
+      const roundTime = data.roundTime;
+      const endTime = data.endTime;
+      const purpose = data.purpose;
+      const noteDeparture = data.noteDeparture;
+      const noteReturn = data.noteReturn;
+      const fromPlaceReturn = data.fromPlaceReturn;
+      const toPlaceReturn = data.toPlaceReturn;
+      const roundTimeReturn = data.roundTimeReturn;
+      const endTimeReturn = data.endTimeReturn;
+      const idCrossAreaCarPool = idCrossAreaCarPoolBooking;
+      const field = await pool.query(
+        `
+                  INSERT INTO 
+                  CrossAreaCarPoolBookingPassenger 
+                      (idCrossAreaCarPoolBooking, idUser, name,telephoneMobile, email, department, company, costCenter,
+                        costElement, fromPlace, toPlace, roundTime, endTime, purpose, noteDeparture, fromPlaceReturn, toPlaceReturn, roundTimeReturn, endTimeReturn, noteReturn) 
+                  VALUES 
+                      (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [
+          idCrossAreaCarPool,
+          idUser,
+          namePassenger,
+          phonePassenger,
+          emailPassenger,
+          departmentPassenger,
+          companyPassenger,
+          costCenter,
+          costElement,
+          fromPlacePassenger,
+          toPlace,
+          roundTime,
+          endTime,
+          purpose,
+          noteDeparture,
+          fromPlaceReturn,
+          toPlaceReturn,
+          roundTimeReturn,
+          endTimeReturn,
+          noteReturn,
         ]
       );
       const resdataid = await pool.query(

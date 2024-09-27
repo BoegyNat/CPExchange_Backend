@@ -30,6 +30,22 @@ exports.getAllCaterings = async (req, res) => {
     } else {
       result = await pool.query("SELECT * FROM CateringRequest");
     }
+    const CateringType = await pool.query("SELECT * FROM CateringType");
+
+    if (result) {
+      for (let i = 0; i < result.length; i++) {
+        for (let j = 0; j < CateringType.length; j++) {
+          if (result[i].cateringType === CateringType[j].idCateringType) {
+            result[i].cateringTypeName = CateringType[j].Type;
+          }
+          const additionalOption = await pool.query(
+            "SELECT * FROM CateringRequestAdditionalOption WHERE idCateringRequest = ?",
+            [result[i].idCateringRequest]
+          );
+          result[i].additionalOption = additionalOption;
+        }
+      }
+    }
     return res.status(200).send({
       success: true,
       data: result,
