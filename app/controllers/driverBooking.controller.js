@@ -184,6 +184,22 @@ exports.postManageCarDriverBooking = async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 };
+
+exports.postChangeStatusApproveDriverBooking = async (req, res) => {
+  try {
+    const rows = await pool.query(
+      "UPDATE DriverBooking SET statusApproved = ? WHERE idDriverBooking = ?",
+      [req.body.statusApproved, req.body.idDriverBooking]
+    );
+    if (rows.affectedRows > 0) {
+      res.status(200).send(rows);
+    } else {
+      res.status(404).send("Not Found");
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
 exports.deleteCarDriverBooking = async (req, res) => {
   try {
     const rows = await pool.query(
@@ -365,6 +381,100 @@ exports.getDriverBookingByFilter = async (req, res) => {
       result = result.filter((value) => value.statusManageCar === "Success");
     } else if (status === "รอจัดคนขับรถ") {
       result = result.filter((value) => value.statusManageCar != "Success");
+    }
+
+    if (startdate === null && enddate === null) {
+      result = result;
+    } else if (startdate != null && enddate === null) {
+      result = result.filter(
+        (value) =>
+          startdate < value.startDate.slice(0, 10) ||
+          startdate === value.startDate.slice(0, 10)
+      );
+    } else if (startdate != null && enddate != null) {
+      result = result.filter(
+        (value) =>
+          startdate < value.startDate.slice(0, 10) ||
+          startdate === value.startDate.slice(0, 10)
+      );
+      result = result.filter(
+        (value) =>
+          enddate > value.startDate.slice(0, 10) ||
+          enddate === value.startDate.slice(0, 10)
+      );
+    } else if (startdate === null && enddate != null) {
+      result = result.filter(
+        (value) =>
+          enddate > value.startDate.slice(0, 10) ||
+          enddate === value.startDate.slice(0, 10)
+      );
+    }
+    console.log(result);
+    if (result.length > 0) {
+      return res
+        .status(200)
+        .send({ type: "success", msg: "get data success", data: { result } });
+    } else {
+      return res
+        .status(200)
+        .send({ type: "no success", msg: "no data", data: { result } });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getDriverBookingByFilterForManager = async (req, res) => {
+  try {
+    const { name, from, to, status, startdate, enddate } = req.body;
+    // console.log(name, from, to, status, startdate, enddate)
+
+    let result;
+    if (name === "") {
+      result = await pool.query(
+        "SELECT * FROM DriverBooking db LEFT JOIN UniHR.Employees e ON db.idUser = e.idEmployees LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany  WHERE db.idUser = e.idEmployees AND ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL ;"
+      );
+    } else {
+      result = await pool.query(`
+        SELECT * 
+        FROM DriverBooking db 
+        LEFT JOIN UniHR.Employees e ON db.idUser = e.idEmployees 
+        LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  
+        LEFT JOIN UniHR.\`Position\` p ON ep.idPosition = p.idPosition 
+        LEFT JOIN UniHR.\`Section\` s ON p.idSection = s.idSection 
+        LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment 
+        LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision 
+        LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit 
+        LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany  
+        WHERE db.idUser = e.idEmployees 
+        AND LOWER(db.nameUser) LIKE '%${name.toLowerCase()}%'
+        AND (ep.\`start\` <= CURDATE() 
+        AND (ep.\`end\` >= CURDATE() OR ep.\`end\` IS NULL));
+      `);
+    }
+
+    if (from === "") {
+      result = result;
+    } else {
+      result = await pool.query(`SELECT  * FROM DriverBooking WHERE
+      LOWER(DriverBooking.namePlaceFrom) LIKE '%${from.toLowerCase()}%'`);
+    }
+
+    if (to === "") {
+      result = result;
+    } else {
+      result = await pool.query(`SELECT  * FROM DriverBooking WHERE
+      LOWER(DriverBooking.namePlaceTo) LIKE '%${to.toLowerCase()}%'`);
+    }
+
+    if (status === "ทั้งหมด") {
+      result = result;
+    } else if (status === "อนุมัติ") {
+      result = result.filter((value) => value.statusApproved === "approved");
+    } else if (status === "ไม่อนุมัติ") {
+      result = result.filter((value) => value.statusApproved === "reject");
+    } else {
+      result = result.filter((value) => value.statusApproved === null);
     }
 
     if (startdate === null && enddate === null) {

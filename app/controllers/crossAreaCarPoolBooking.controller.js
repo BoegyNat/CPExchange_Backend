@@ -7,6 +7,13 @@ const pool = require("../connection.js");
 exports.getAllCrossAreaCarPoolBookings = async (req, res) => {
   try {
     const rows = await pool.query("SELECT * FROM CrossAreaCarPoolBooking");
+    for (const booking of rows) {
+      const passengers = await pool.query(
+        "SELECT * FROM CrossAreaCarPoolBookingPassenger WHERE idCrossAreaCarPoolBooking = ?",
+        [booking.idCrossAreaCarPoolBooking]
+      );
+      booking.passengers = passengers;
+    }
     res.status(200).send(rows);
   } catch (error) {
     res.status(500).send({ message: error.message });

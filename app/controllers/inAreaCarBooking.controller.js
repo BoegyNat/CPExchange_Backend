@@ -15,7 +15,18 @@ function convertStringDatetime(time) {
 exports.getAllInAreaCarBookings = async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM inAreaCarBooking");
-    res.status(200).send(result);
+    const vehicleType = await pool.query("SELECT * FROM VehicleTypes");
+
+    if (result.length > 0) {
+      result.map((booking) => {
+        booking.vehicleTypes = vehicleType.find(
+          (vehitype) => vehitype.idVehicleTypes == booking.idTypeCar
+        );
+      });
+      res.status(200).send(result);
+    } else {
+      res.status(404).send("Not Found Booking");
+    }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }

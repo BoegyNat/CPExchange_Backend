@@ -10,6 +10,32 @@ const pool = require("../connection.js");
 exports.getAllCrossAreaCarBookings = async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM CrossAreaCarBooking");
+    const VehicleBrandsAndModels = await pool.query(
+      "SELECT * FROM VehicleBrandsAndModels"
+    );
+    const VehicleTypes = await pool.query("SELECT * FROM VehicleTypes");
+
+    for (const booking of result) {
+      const User = await pool.query(
+        "SELECT * FROM UniHR.Employees e LEFT JOIN UniHR.EmployeePosition ep ON e.idEmployees = ep.idEmployees  LEFT JOIN UniHR.`Position` p ON ep.idPosition = p.idPosition LEFT JOIN UniHR.`Section` s ON p.idSection = s.idSection LEFT JOIN UniHR.Department d ON p.idDepartment = d.idDepartment LEFT JOIN UniHR.Division d2 ON p.idDivision = d2.idDivision LEFT JOIN UniHR.BusinessUnit bu ON p.idBusinessUnit = bu.idBusinessUnit LEFT JOIN UniHR.Company c ON p.idCompany = c.idCompany WHERE e.idEmployees = ?  AND (ep.`start` <= CURDATE() AND ep.`end` >= CURDATE() OR ep.`end` IS NULL) ",
+        [booking.idUser]
+      );
+      booking.user = User[0];
+
+      booking.vehicleBrandsAndModels = VehicleBrandsAndModels.find(
+        (vehicle) =>
+          vehicle.idVehicleBrandsAndModels == booking.idVehicleBrandAndModel
+      );
+
+      booking.vehicleTypes = VehicleTypes.find(
+        (type) => type.idVehicleTypes == booking.idTypeCar
+      );
+
+      booking.passengers = await pool.query(
+        "SELECT * FROM CrossAreaCarPassenger WHERE idCrossAreaCar = ?",
+        [booking.idCrossAreaCarBooking]
+      );
+    }
     res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: error.message });
@@ -69,7 +95,7 @@ exports.getCrossAreaCarBookingByIdUser = async (req, res) => {
       );
       const VehicleTypes = await pool.query("SELECT * FROM VehicleTypes");
 
-      row.map(async (booking) => {
+      for (const booking of row) {
         booking.user = User[0];
 
         booking.vehicleBrandsAndModels = VehicleBrandsAndModels.find(
@@ -85,7 +111,7 @@ exports.getCrossAreaCarBookingByIdUser = async (req, res) => {
           "SELECT * FROM CrossAreaCarPassenger WHERE idCrossAreaCar = ?",
           [booking.idCrossAreaCarBooking]
         );
-      });
+      }
       res.status(200).send(row);
     } else {
       res.status(404).send("Not Found Booking");

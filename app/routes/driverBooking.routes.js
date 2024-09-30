@@ -19,6 +19,11 @@ module.exports = function (app) {
     [authJwt.verifyToken],
     DriverController.updateDriverBooking
   );
+  app.post(
+    "/api/update_status_approve_driver_booking",
+    [authJwt.verifyToken],
+    DriverController.postChangeStatusApproveDriverBooking
+  );
   app.get(
     "/api/all_new_driver_booking",
     [authJwt.verifyToken],
@@ -59,6 +64,11 @@ module.exports = function (app) {
     "/api/driver_booking_byFilter",
     [authJwt.verifyToken],
     DriverController.getDriverBookingByFilter
+  );
+  app.post(
+    "/api/driver_booking_byFilter_for_manager",
+    [authJwt.verifyToken],
+    DriverController.getDriverBookingByFilterForManager
   );
   app.post(
     "/api/driver_booking_byFilter_byIdUser",
