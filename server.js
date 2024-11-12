@@ -86,10 +86,10 @@ require("./app/routes/driverBooking.routes")(app);
 // Create an HTTP server and attach the Express app
 const server = http.createServer(app);
 
-console.log("server => ", server);
+// console.log("server => ", server);
 // Create WebSocket server using the same HTTP server
 const wss = new WebSocket.Server({ server });
-console.log("wss => ", wss);
+// console.log("wss => ", wss);
 // Handle WebSocket connections
 wss.on("connection", (ws) => {
   console.log("Client connected");
