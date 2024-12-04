@@ -1,6 +1,3 @@
-const db = require("../models");
-const Users = db.users;
-
 const pool = require("../connection.js");
 
 exports.userProfile = async (req, res) => {

@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const config = require("../config/auth.config.js");
-const db = require("../models");
-const Users = db.users;
+// const db = require("../models");
+// const Users = db.users;
 
 verifyToken = (req, res, next) => {
   let token = req.headers["x-access-token"];
@@ -23,33 +23,33 @@ verifyToken = (req, res, next) => {
   });
 };
 
-isAdmin = (req, res, next) => {
-  let result = Users.find((user) => user.id === req.params.currentId);
-  for (let i = 0; i < result.authorities.length; i++) {
-    if (result.authorities[i] === "ROLE_ADMIN") {
-      next();
-      return;
-    }
-  }
+// isAdmin = (req, res, next) => {
+//   let result = Users.find((user) => user.id === req.params.currentId);
+//   for (let i = 0; i < result.authorities.length; i++) {
+//     if (result.authorities[i] === "ROLE_ADMIN") {
+//       next();
+//       return;
+//     }
+//   }
 
-  res.status(403).send({
-    message: "Require Admin Role!",
-  });
-};
+//   res.status(403).send({
+//     message: "Require Admin Role!",
+//   });
+// };
 
-isManager = (req, res, next) => {
-  let result = Users.find((user) => user.id === req.params.currentId);
-  for (let i = 0; i < result.authorities.length; i++) {
-    if (result.authorities[i] === "ROLE_MANAGER") {
-      next();
-      return;
-    }
-  }
+// isManager = (req, res, next) => {
+//   let result = Users.find((user) => user.id === req.params.currentId);
+//   for (let i = 0; i < result.authorities.length; i++) {
+//     if (result.authorities[i] === "ROLE_MANAGER") {
+//       next();
+//       return;
+//     }
+//   }
 
-  res.status(403).send({
-    message: "Require Manager Role!",
-  });
-};
+//   res.status(403).send({
+//     message: "Require Manager Role!",
+//   });
+// };
 
 // isModeratorOrAdmin = (req, res, next) => {
 //   User.findByPk(req.userId).then((user) => {
@@ -75,7 +75,7 @@ isManager = (req, res, next) => {
 
 const authJwt = {
   verifyToken: verifyToken,
-  isAdmin: isAdmin,
-  isManager: isManager,
+  // isAdmin: isAdmin,
+  // isManager: isManager,
 };
 module.exports = authJwt;

@@ -9,10 +9,7 @@ var pool = mysql.createPool({
   port: dbConfig.PORT,
   password: dbConfig.PASSWORD,
   database: dbConfig.DB,
-  socketPath:
-    process.env.NODE_ENV === "production"
-      ? dbConfig.SOCKETPATH
-      : "",
+  socketPath: process.env.NODE_ENV === "production" ? dbConfig.SOCKETPATH : "",
 });
 
 pool.getConnection((err, connection) => {
