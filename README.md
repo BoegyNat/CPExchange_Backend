@@ -2,6 +2,9 @@
 
 # Build Database SQL Code
 
+
+```
+
 -- Create the 'userstatus' table
 CREATE TABLE userstatus (
     idUserStatus INT PRIMARY KEY AUTO_INCREMENT,
@@ -41,6 +44,7 @@ CREATE TABLE post (
     anonymous BOOLEAN,
     hasVerify BOOLEAN,
     `like` INT DEFAULT 0,
+    filePath VARCHAR(255),
     idPostStatus INT,
     FOREIGN KEY (idUser) REFERENCES user(idUser),
     FOREIGN KEY (idPostStatus) REFERENCES poststatus(idPostStatus)
@@ -118,6 +122,14 @@ CREATE TABLE tag (
     tagName VARCHAR(255) NOT NULL
 );
 
+-- Create the 'subtag' table
+CREATE TABLE subtag (
+    idSubTag INT PRIMARY KEY AUTO_INCREMENT,
+    idTag INT NOT NULL,
+    subTagName VARCHAR(255) NOT NULL,
+    FOREIGN KEY (idTag) REFERENCES tag(idTag)
+);
+
 -- Create the 'posttag' table
 CREATE TABLE posttag (
     idPostTag INT PRIMARY KEY AUTO_INCREMENT,
@@ -125,6 +137,35 @@ CREATE TABLE posttag (
     idPost INT,
     FOREIGN KEY (idTag) REFERENCES tag(idTag),
     FOREIGN KEY (idPost) REFERENCES post(idPost)
+);
+
+-- Create the 'postsubtag' table
+CREATE TABLE postsubtag (
+    idPostSubTag INT PRIMARY KEY AUTO_INCREMENT,
+    idSubTag INT,
+    idPost INT,
+    FOREIGN KEY (idSubTag) REFERENCES subtag(idSubTag),
+    FOREIGN KEY (idPost) REFERENCES post(idPost)
+);
+
+-- Create the 'usertagpriority' table
+CREATE TABLE usertagpriority (
+    idUserTagPriority INT PRIMARY KEY AUTO_INCREMENT,
+    idUser INT,
+    idTag INT,
+    priority INT,
+    FOREIGN KEY (idTag) REFERENCES tag(idTag),
+    FOREIGN KEY (idUser) REFERENCES user(idUser)
+);
+
+-- Create the 'usersubtagpriority' table
+CREATE TABLE usersubtagpriority (
+    idUserSubTagPriority INT PRIMARY KEY AUTO_INCREMENT,
+    idUser INT,
+    idSubTag INT,
+    priority INT,
+    FOREIGN KEY (idSubTag) REFERENCES subtag(idSubTag),
+    FOREIGN KEY (idUser) REFERENCES user(idUser)
 );
 
 -- Create the 'notificationstatus' table
@@ -141,3 +182,5 @@ CREATE TABLE notification (
     reference VARCHAR(255),
     FOREIGN KEY (idNotificationStatus) REFERENCES notificationstatus(idNotificationStatus)
 );
+
+```
