@@ -221,3 +221,105 @@ CREATE TABLE notification (
 );
 
 ```
+
+### Mock Data
+
+````
+
+-- Insert mock data for 'userstatus'
+INSERT INTO userstatus (StatusName) VALUES
+('Active'),
+('Inactive'),
+('Banned');
+
+-- Insert mock data for 'user'
+INSERT INTO user (studentCode, firstname_TH, lastname_TH, firstname_EN, lastname_EN, email, profileName, username, password, imagePath, idUserStatus) VALUES
+('640610001', 'สมชาย', 'ใจดี', 'Somchai', 'Jaidee', 'somchai@example.com', 'somchai99', 'somchai99', 'password123', 'image1.jpg', 1),
+('640610002', 'สมศรี', 'ใจงาม', 'Somsri', 'Jaingam', 'somsri@example.com', 'somsri88', 'somsri88', 'password123', 'image2.jpg', 1);
+
+-- Insert mock data for 'poststatus'
+INSERT INTO poststatus (PostStatusName) VALUES
+('Published'),
+('Deleted'),
+('Ban');
+
+-- Insert mock data for 'post'
+INSERT INTO post (idUser, topic, timeStamp, detail, anonymous, hasVerify, `like`, filePath, idPostStatus) VALUES
+(1, 'First Post', NOW(), 'This is the first post.', FALSE, TRUE, 10, NULL, 1),
+(2, 'Second Post', NOW(), 'This is another post.', TRUE, FALSE, 5, NULL, 1);
+
+-- Insert mock data for 'comment'
+INSERT INTO comment (idPost, idUser, timeStamp, anonymous, detail, `like`, idPostStatus) VALUES
+(1, 2, NOW(), FALSE, 'This is a comment on the first post.', 2, 1),
+(2, 1, NOW(), TRUE, 'This is an anonymous comment on the second post.', 1, 1);
+
+-- Insert mock data for 'reply'
+INSERT INTO reply (idComment, idUser, timeStamp, anonymous, detail, `like`, idPostStatus) VALUES
+(1, 1, NOW(), FALSE, 'This is a reply to the first comment.', 1, 1),
+(2, 2, NOW(), TRUE, 'This is an anonymous reply.', 0, 1);
+
+-- Insert mock data for 'likepost'
+INSERT INTO likepost (idPost, idUser) VALUES
+(1, 2),
+(2, 1);
+
+-- Insert mock data for 'likecomment'
+INSERT INTO likecomment (idComment, idUser) VALUES
+(1, 1),
+(2, 2);
+
+-- Insert mock data for 'likereply'
+INSERT INTO likereply (idReply, idUser) VALUES
+(1, 2),
+(2, 1);
+
+-- Insert mock data for 'bookmark'
+INSERT INTO bookmark (idUser, idPost) VALUES
+(1, 1),
+(2, 2);
+
+-- Insert mock data for 'tag'
+INSERT INTO tag (tagName) VALUES
+('Technology'),
+('Education'),
+('Health');
+
+-- Insert mock data for 'subtag'
+INSERT INTO subtag (idTag, subTagName) VALUES
+(1, 'AI'),
+(1, 'Blockchain'),
+(2, 'Online Learning'),
+(3, 'Mental Health');
+
+-- Insert mock data for 'posttag'
+INSERT INTO posttag (idTag, idPost) VALUES
+(1, 1),
+(2, 2);
+
+-- Insert mock data for 'postsubtag'
+INSERT INTO postsubtag (idSubTag, idPost) VALUES
+(1, 1),
+(3, 2);
+
+-- Insert mock data for 'usertagpriority'
+INSERT INTO usertagpriority (idUser, idTag, priority) VALUES
+(1, 1, 5),
+(2, 2, 3);
+
+-- Insert mock data for 'usersubtagpriority'
+INSERT INTO usersubtagpriority (idUser, idSubTag, priority) VALUES
+(1, 1, 5),
+(2, 3, 4);
+
+-- Insert mock data for 'notificationstatus'
+INSERT INTO notificationstatus (NotificationStatusName) VALUES
+('Unread'),
+('Read');
+
+-- Insert mock data for 'notification'
+INSERT INTO notification (detail, idNotificationStatus, reference) VALUES
+('Your post has been liked.', 1, 'PostID: 1'),
+('Your comment received a reply.', 2, 'CommentID: 1');
+
+```
+````
