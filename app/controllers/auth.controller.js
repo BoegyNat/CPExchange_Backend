@@ -14,7 +14,7 @@ exports.signin = async (req, res) => {
     .query(
       `
   SELECT
-        firstname_TH , lastname_TH , email , username , password 
+        *
       FROM
         user
       WHERE
@@ -28,44 +28,6 @@ exports.signin = async (req, res) => {
 
     .then((rows) => {
       if (rows.length > 0) {
-        // if (rows[0].password == null) {
-        //   if (password == rows[0].personalID) {
-        //     var token = jwt.sign(
-        //       { idUser: rows[0].idEmployees },
-        //       config.secret,
-        //       {
-        //         expiresIn: 86400, // 24 hours
-        //       }
-        //     );
-
-        //     if (token) {
-        //       return res.status(200).send({
-        //         type: "success",
-        //         msg: "Login success",
-        //         returnData: {
-        //           fullname: rows[0].firstname_TH + " " + rows[0].lastname_TH,
-        //           firstname_TH: rows[0].firstname_TH,
-        //           lastname_TH: rows[0].lastname_TH,
-        //           email: rows[0].email,
-        //           idUser: rows[0].idEmployees,
-        //           username: rows[0].username,
-        //           roles:
-        //             rows[0].roleName === "ROLE_ADMIN" ||
-        //             rows[0].roleName === "ROLE_MANAGER"
-        //               ? rows[0].roleName + ",ROLE_USER"
-        //               : rows[0].roleName,
-        //           image: rows[0].imageName,
-        //           accessToken: token,
-        //         },
-        //       });
-        //     }
-        //   } else {
-        //     return res.status(200).send({
-        //       type: "password_invalid",
-        //       msg: "Password Not Correct",
-        //     });
-        //   }
-        // }
         if (rows[0].password === password) {
           //password ถูก
 
@@ -78,13 +40,18 @@ exports.signin = async (req, res) => {
               type: "success",
               msg: "Login success",
               returnData: {
-                fullname: rows[0].firstname + " " + rows[0].lastname,
-                firstname_TH: rows[0].firstname,
-                lastname_TH: rows[0].lastname,
+                idUser: rows[0].idUser,
+                fullname: rows[0].firstname_TH + " " + rows[0].lastname_TH,
+                firstname_TH: rows[0].firstname_TH,
+                lastname_TH: rows[0].lastname_TH,
+                firstname_EN: rows[0].firstname_EN,
+                lastname_EN: rows[0].lastname_EN,
+                profileName: rows[0].profileName,
+                studentCode: rows[0].studentCode,
                 email: rows[0].email,
-                idUser: rows[0].id,
+                idUser: rows[0].idUser,
                 username: rows[0].username,
-                roles: "ROLE_ADMIN",
+                roles: rows[0].role,
                 image: "imageName",
                 accessToken: token,
               },
