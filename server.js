@@ -34,6 +34,7 @@ app.get("/", (req, res) => {
 require("./app/routes/auth.routes")(app);
 require("./app/routes/user.routes")(app);
 require("./app/routes/tag.routes")(app);
+require("./app/routes/post.routes")(app);
 
 // Create an HTTP server and attach the Express app
 const server = http.createServer(app);
