@@ -12,7 +12,7 @@ function getAttchment(posts) {
     for (let j = 0; j < attachment.length; j++) {
       newAttachment.push({
         fileName: "unknow(" + j + ")",
-        url: `http://localhost:8080/file/post/${posts[i].idPost}/${attachment[j].path}`,
+        url: `http://localhost:8080/file/post/${attachment[j].path}`,
       });
     }
     result.push({
@@ -51,8 +51,8 @@ exports.getAllPostByIdUser = async (req, res) => {
 exports.getAllPost = async (req, res) => {
   try {
     let result = await pool.query("SELECT * FROM post");
-    return res.status(200).send(result);
     result = getAttchment(result);
+    return res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: error.message });
   }

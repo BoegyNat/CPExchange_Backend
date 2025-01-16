@@ -152,3 +152,54 @@ exports.postCreateComment = async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 };
+
+exports.postVerifyClickComment = async (req, res) => {
+  try {
+    const { idComment, idUser } = req.body;
+    let checkVerifyComment = await pool.query(
+      `SELECT * FROM verifycomment WHERE idComment = ? AND idUser = ?`,
+      [idComment, idUser]
+    );
+    let result;
+    if (checkVerifyComment.length > 0) {
+      if (checkVerifyComment[0].idUser == idUser) {
+        let deleteVerifyComment = await pool.query(
+          `DELETE FROM verifycomment WHERE idComment = ? AND idUser = ?`,
+          [idComment, idUser]
+        );
+        result = await pool.query(
+          `UPDATE comment SET isVerify = FALSE  WHERE idComment = ?`,
+          [idComment]
+        );
+      }
+    } else {
+      let addVerifyComment = await pool.query(
+        `INSERT INTO verifycomment (idComment, idUser ) VALUES (?, ?)`,
+        [idComment, idUser]
+      );
+
+      result = await pool.query(
+        `UPDATE comment SET isVerify = TRUE WHERE idComment = ?`,
+        [idComment]
+      );
+
+      let AddHasVerifyPost = await pool.query(
+        `UPDATE post SET hasVerify = TRUE WHERE idPost = (SELECT idPost FROM comment WHERE idComment = ?)`,
+        [idComment]
+      );
+    }
+    let comment = await pool.query(
+      `SELECT * FROM comment WHERE idComment = ?`,
+      [idComment]
+    );
+    if (result) {
+      return res
+        .status(200)
+        .send({ message: "Verify success", data: comment[0] });
+    } else {
+      return res.status(404).send({ message: "Don't have comment" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
