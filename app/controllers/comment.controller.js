@@ -2,6 +2,7 @@ const e = require("express");
 const pool = require("../connection.js");
 const fs = require("fs");
 const path = require("path");
+const { profile } = require("console");
 
 exports.getAllCommentByIdPost = async (req, res) => {
   try {
@@ -11,7 +12,17 @@ exports.getAllCommentByIdPost = async (req, res) => {
       [idPost]
     );
 
-    return res.status(200).send(result);
+    for (let i = 0; i < result.length; i++) {
+      let user = await pool.query(`SELECT * FROM user WHERE idUser = ?`, [
+        result[i].idUser,
+      ]);
+      result[i].profileName = user[0].profileName;
+    }
+    if (result) {
+      return res.status(200).send(result);
+    } else {
+      return res.status(404).send([]);
+    }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
@@ -130,8 +141,14 @@ exports.postCreateComment = async (req, res) => {
       [idUser, idPost, detail, new Date(), 0]
     );
 
+    const user = await pool.query(`SELECT * FROM user WHERE idUser = ?`, [
+      idUser,
+    ]);
+
     if (rows) {
       newComment = {
+        idComment: rows.insertId,
+        profileName: user[0].profileName,
         idPost: idPost,
         idUser: idUser,
         timeStamp: new Date(),
@@ -144,7 +161,7 @@ exports.postCreateComment = async (req, res) => {
       };
       return res.status(200).send({
         success: true,
-        data: newPost,
+        data: newComment,
         error: null,
       });
     }

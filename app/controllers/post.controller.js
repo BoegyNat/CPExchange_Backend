@@ -11,7 +11,7 @@ function getAttchment(posts) {
     let newAttachment = [];
     for (let j = 0; j < attachment.length; j++) {
       newAttachment.push({
-        fileName: "unknow(" + j + ")",
+        fileName: attachment[j].path.split("/")[1],
         url: `http://localhost:8080/file/post/${attachment[j].path}`,
       });
     }
@@ -26,6 +26,13 @@ function getAttchment(posts) {
       like: posts[i].like,
       attachment: newAttachment,
       idPostStatus: posts[i].idPostStatus,
+      firstName_TH: posts[i].firstName_TH,
+      lastName_TH: posts[i].lastName_TH,
+      firstName_EN: posts[i].firstName_EN,
+      lastName_EN: posts[i].lastName_EN,
+      email: posts[i].email,
+      profileName: posts[i].profileName,
+      imagePath: posts[i].imagePath,
     });
   }
   return result;
@@ -35,10 +42,24 @@ exports.getAllPostByIdUser = async (req, res) => {
   try {
     const { idUser } = req.params;
     let result = await pool.query(
-      "SELECT * FROM post WHERE idUser = ? ORDER BY timeStamp DESC",
+      "SELECT * FROM post p LEFT JOIN user u ON p.idUser = u.idUser WHERE p.idUser = ? ORDER BY timeStamp DESC",
       [idUser]
     );
     result = getAttchment(result);
+    for (let i = 0; i < result.length; i++) {
+      let tag = await pool.query(
+        "SELECT * FROM tag t LEFT JOIN posttag pt ON t.idTag = pt.idTag WHERE pt.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].tag = tag;
+
+      let subtag = await pool.query(
+        "SELECT * FROM subtag s LEFT JOIN postsubtag ps ON s.idSubTag = ps.idSubTag WHERE ps.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].subtag = subtag;
+    }
+
     if (result) {
       res.status(200).send(result);
     } else {
@@ -51,8 +72,23 @@ exports.getAllPostByIdUser = async (req, res) => {
 
 exports.getAllPost = async (req, res) => {
   try {
-    let result = await pool.query("SELECT * FROM post ORDER BY timeStamp DESC");
+    let result = await pool.query(
+      "SELECT * FROM post p LEFT JOIN user u ON p.idUser = u.idUser ORDER BY timeStamp DESC"
+    );
     result = getAttchment(result);
+    for (let i = 0; i < result.length; i++) {
+      let tag = await pool.query(
+        "SELECT * FROM tag t LEFT JOIN posttag pt ON t.idTag = pt.idTag WHERE pt.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].tag = tag;
+
+      let subtag = await pool.query(
+        "SELECT * FROM subtag s LEFT JOIN postsubtag ps ON s.idSubTag = ps.idSubTag WHERE ps.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].subtag = subtag;
+    }
     return res.status(200).send(result);
   } catch (error) {
     res.status(500).send({ message: error.message });
@@ -67,6 +103,7 @@ exports.postClickLikePost = async (req, res) => {
       [idPost, idUser]
     );
     let result;
+    let like = 0;
     if (checkLikePost.length > 0) {
       let deleteLikePost = await pool.query(
         `DELETE FROM likepost WHERE idPost = ? AND idUser = ?`,
@@ -76,6 +113,7 @@ exports.postClickLikePost = async (req, res) => {
         `UPDATE post SET \`like\` = \`like\` - 1 WHERE idPost = ?`,
         [idPost]
       );
+      like = -1;
     } else {
       let addLikePost = await pool.query(
         `INSERT INTO likepost (idPost, idUser ) VALUES (?, ?)`,
@@ -86,6 +124,7 @@ exports.postClickLikePost = async (req, res) => {
         `UPDATE post SET \`like\` = \`like\` + 1 WHERE idPost = ?`,
         [idPost]
       );
+      like = 1;
     }
 
     let post = await pool.query(`SELECT * FROM post WHERE idPost = ?`, [
@@ -93,7 +132,9 @@ exports.postClickLikePost = async (req, res) => {
     ]);
 
     if (result) {
-      return res.status(200).send({ message: "Like success", data: post[0] });
+      return res
+        .status(200)
+        .send({ message: "Like success", data: post[0], like: like });
     } else {
       return res.status(404).send({ message: "Don't have post" });
     }
@@ -108,7 +149,7 @@ exports.getPostByPriority = async (req, res) => {
     let result = await pool.query(
       `
  SELECT 
-    p.*, 
+    p.*,  u.* ,
     COALESCE(MAX(utp.priority), 0) AS tagPriority, 
     COALESCE(MAX(ustp.priority), 0) AS subTagPriority,
     (COALESCE(MAX(utp.priority), 0) + COALESCE(MAX(ustp.priority), 0)) AS totalPriority
@@ -118,6 +159,7 @@ LEFT JOIN posttag pt ON p.idPost = pt.idPost
 LEFT JOIN usertagpriority utp ON pt.idTag = utp.idTag AND utp.idUser = ?
 LEFT JOIN postsubtag pst ON p.idPost = pst.idPost
 LEFT JOIN usersubtagpriority ustp ON pst.idSubTag = ustp.idSubTag AND ustp.idUser = ? 
+LEFT JOIN user u ON p.idUser = u.idUser
 GROUP BY p.idPost
 ORDER BY totalPriority DESC, p.timeStamp DESC;
 `,
@@ -125,6 +167,19 @@ ORDER BY totalPriority DESC, p.timeStamp DESC;
     );
     result = getAttchment(result);
 
+    for (let i = 0; i < result.length; i++) {
+      let tag = await pool.query(
+        "SELECT * FROM tag t LEFT JOIN posttag pt ON t.idTag = pt.idTag WHERE pt.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].tag = tag;
+
+      let subtag = await pool.query(
+        "SELECT * FROM subtag s LEFT JOIN postsubtag ps ON s.idSubTag = ps.idSubTag WHERE ps.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].subtag = subtag;
+    }
     if (result) {
       res.status(200).send(result);
     } else {

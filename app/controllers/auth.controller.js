@@ -1,10 +1,12 @@
 // const db = require("../models");
+const e = require("express");
 const config = require("../config/auth.config");
 // const Users = db.users;
 
 const pool = require("../connection.js");
 
 var jwt = require("jsonwebtoken");
+const { ro } = require("date-fns/locale");
 
 exports.signin = async (req, res) => {
   const { username, password } = req.body;
@@ -52,7 +54,7 @@ exports.signin = async (req, res) => {
                 idUser: rows[0].idUser,
                 username: rows[0].username,
                 roles: rows[0].role,
-                image: "imageName",
+                image: rows[0].imagePath,
                 accessToken: token,
               },
             });
@@ -69,4 +71,94 @@ exports.signin = async (req, res) => {
           .send({ type: "not_found", msg: "User Not Found" });
       }
     });
+};
+
+exports.signup = async (req, res) => {
+  const {
+    firstname_TH,
+    lastname_TH,
+    firstname_EN,
+    lastname_EN,
+    email,
+    username,
+    password,
+    profileName,
+  } = req.body;
+
+  await pool
+    .query(
+      `
+  INSERT INTO user (firstname_TH, lastname_TH, firstname_EN, lastname_EN, email, username, password, role, profileName)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        `,
+      [
+        firstname_TH,
+        lastname_TH,
+        firstname_EN,
+        lastname_EN,
+        email,
+        username,
+        password,
+        "ROLE_USER",
+        profileName,
+      ]
+    )
+    .then((rows) => {
+      if (rows) {
+        var token = jwt.sign({ idUser: rows.insertId }, config.secret, {
+          expiresIn: 86400, // 24 hours
+        });
+
+        if (token) {
+          return res.status(200).send({
+            type: "success",
+            msg: "Login success",
+            returnData: {
+              idUser: rows.insertId,
+              fullname: firstname_TH + " " + lastname_TH,
+              firstname_TH: firstname_TH,
+              lastname_TH: lastname_TH,
+              firstname_EN: firstname_EN,
+              lastname_EN: lastname_EN,
+              profileName: profileName,
+              studentCode: null,
+              email: email,
+              username: username,
+              roles: "ROLE_USER",
+              image: "imageName",
+              accessToken: token,
+            },
+          });
+        }
+      } else {
+        return res.status(200).send({ type: "fail", msg: "Register fail" });
+      }
+    });
+};
+
+exports.checkUserName = async (req, res) => {
+  const username = req.body[0];
+
+  let result = await pool.query(
+    `
+  SELECT
+        *
+      FROM
+        user
+      WHERE
+        username = ?
+
+        `,
+    [username]
+  );
+
+  if (result.length > 0) {
+    return res
+      .status(200)
+      .send({ exists: true, type: "fail", msg: "Username is used" });
+  } else {
+    return res
+      .status(200)
+      .send({ exists: false, type: "success", msg: "Username is ok" });
+  }
 };
