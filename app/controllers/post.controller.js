@@ -1,3 +1,4 @@
+const e = require("express");
 const pool = require("../connection.js");
 const fs = require("fs");
 const path = require("path");
@@ -33,15 +34,13 @@ exports.postCreatePost = async (req, res) => {
       lastedPostId = parseInt(lastedPost[0].idPost) + 1;
     }
 
-    if (
-      fs.existsSync(path.join(__dirname, `../../app/file/post/${lastedPostId}`))
-    ) {
-      fs.rmSync(path.join(__dirname, `../../app/file/post/${lastedPostId}`), {
+    if (fs.existsSync(path.join(__dirname, `../file/post/${lastedPostId}`))) {
+      fs.rmSync(path.join(__dirname, `../file/post/${lastedPostId}`), {
         recursive: true,
         force: true,
       });
     }
-    fs.mkdirSync(path.join(__dirname, `../../app/file/post/${lastedPostId}`));
+    fs.mkdirSync(path.join(__dirname, `../file/post/${lastedPostId}`));
 
     const attachment = [];
 
@@ -67,7 +66,7 @@ exports.postCreatePost = async (req, res) => {
       }
       let filePath = path.join(
         __dirname,
-        `../../app/file/post/${lastedPostId}/${fileName}`
+        `../file/post/${lastedPostId}/${fileName}`
       );
       fs.writeFileSync(filePath, files[i].buffer);
 
@@ -81,7 +80,7 @@ exports.postCreatePost = async (req, res) => {
       `
                     INSERT INTO 
                     post 
-                        (idUser, topic, timeStamp, detail, anonymouse, hasVerify,\`like\`, filePath, idPostStatus) 
+                        (idUser, topic, timeStamp, detail, anonymous, hasVerify,\`like\`, filePath, idPostStatus) 
                     VALUES 
                         (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
       [
@@ -97,15 +96,46 @@ exports.postCreatePost = async (req, res) => {
       ]
     );
 
-    const AddTag = await pool.query(
-      `INSERT INTO posttag (idtag, idpost) VALUES (?, ?)`,
-      [subject.idTag, lastedPostId]
-    );
-    for (let i = 0; i < categories.length; i++) {
-      const AddSubTag = await pool.query(
-        `INSERT INTO postsubtag (idsubtag, idpost) VALUES (?, ?)`,
-        [categories[i].idSubTag, lastedPostId]
+    if (subject.idTag == null) {
+      const AddTag = await pool.query(`INSERT INTO tag (tagName) VALUES (?)`, [
+        subject.tagName,
+      ]);
+      const AddPostTag = await pool.query(
+        `INSERT INTO posttag (idtag, idpost) VALUES (?, ?)`,
+        [AddTag.insertId, lastedPostId]
       );
+      for (let i = 0; i < categories.length; i++) {
+        const AddSubTag = await pool.query(
+          `INSERT INTO subtag (idTag, subTagName) VALUES (?, ?)`,
+          [AddTag.insertId, categories[i].subTagName]
+        );
+        const AddPostSubTag = await pool.query(
+          `INSERT INTO postsubtag (idsubtag, idpost) VALUES (?, ?)`,
+          [AddSubTag.insertId, lastedPostId]
+        );
+      }
+    } else {
+      const AddTag = await pool.query(
+        `INSERT INTO posttag (idtag, idpost) VALUES (?, ?)`,
+        [subject.idTag, lastedPostId]
+      );
+      for (let i = 0; i < categories.length; i++) {
+        if (categories[i].idSubTag == null) {
+          const AddSubTag = await pool.query(
+            `INSERT INTO subtag (idTag, subTagName) VALUES (?, ?)`,
+            [subject.idTag, categories[i].subTagName]
+          );
+          const AddPostSubTag = await pool.query(
+            `INSERT INTO postsubtag (idsubtag, idpost) VALUES (?, ?)`,
+            [AddSubTag.insertId, lastedPostId]
+          );
+        } else {
+          const AddSubTag = await pool.query(
+            `INSERT INTO postsubtag (idsubtag, idpost) VALUES (?, ?)`,
+            [categories[i].idSubTag, lastedPostId]
+          );
+        }
+      }
     }
 
     if (rows) {
