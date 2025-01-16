@@ -34,9 +34,10 @@ function getAttchment(posts) {
 exports.getAllPostByIdUser = async (req, res) => {
   try {
     const { idUser } = req.params;
-    let result = await pool.query("SELECT * FROM post WHERE idUser = ?", [
-      idUser,
-    ]);
+    let result = await pool.query(
+      "SELECT * FROM post WHERE idUser = ? ORDER BY timeStamp DESC",
+      [idUser]
+    );
     result = getAttchment(result);
     if (result) {
       res.status(200).send(result);
@@ -50,7 +51,7 @@ exports.getAllPostByIdUser = async (req, res) => {
 
 exports.getAllPost = async (req, res) => {
   try {
-    let result = await pool.query("SELECT * FROM post");
+    let result = await pool.query("SELECT * FROM post ORDER BY timeStamp DESC");
     result = getAttchment(result);
     return res.status(200).send(result);
   } catch (error) {
