@@ -28,4 +28,10 @@ module.exports = function (app) {
     [authJwt.verifyToken, upload.array("attachment")],
     commentController.postCreateComment
   );
+
+  app.post(
+    "/api/post_click_verify_comment",
+    [authJwt.verifyToken],
+    commentController.postClickVerifyComment
+  );
 };

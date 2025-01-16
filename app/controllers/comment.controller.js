@@ -153,7 +153,7 @@ exports.postCreateComment = async (req, res) => {
   }
 };
 
-exports.postVerifyClickComment = async (req, res) => {
+exports.postClickVerifyComment = async (req, res) => {
   try {
     const { idComment, idUser } = req.body;
     let checkVerifyComment = await pool.query(
