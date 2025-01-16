@@ -16,8 +16,8 @@
 module.exports = {
   HOST: "localhost",
   USER: "root",
-  PASSWORD: "boegy5882",
-  DB: "cpexchange",
+  PASSWORD: "1234",
+  DB: "mock",
   PORT: 3306,
   SOCKETPATH: "/var/run/mysqld/mysqld.sock", // ใช้ใน Linux หรือ Mac
 };

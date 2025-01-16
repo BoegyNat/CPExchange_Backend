@@ -2,12 +2,6 @@ const e = require("express");
 const pool = require("../connection.js");
 const fs = require("fs");
 const path = require("path");
-exports.getAllPost = async (req, res) => {
-  try {
-  } catch (error) {
-    res.status(500).send({ message: error.message });
-  }
-};
 
 exports.getAllPostByIdUser = async (req, res) => {
   try {
@@ -15,6 +9,19 @@ exports.getAllPostByIdUser = async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 };
+
+exports.getallPost = async (req, res) => {
+  try {
+    let result = await pool.query(
+      "SELECT * FROM post",
+      
+    );
+    return res.status(200).send(result);
+    } catch (error) {
+    res.status(500).send({ message: error.message });
+    }
+};
+
 
 exports.postCreatePost = async (req, res) => {
   try {
@@ -34,7 +41,9 @@ exports.postCreatePost = async (req, res) => {
       lastedPostId = parseInt(lastedPost[0].idPost) + 1;
     }
 
-    if (fs.existsSync(path.join(__dirname, `../file/post/${lastedPostId}`))) {
+    if (
+      fs.existsSync(path.join(__dirname, `../file/post/${lastedPostId}`))
+    ) {
       fs.rmSync(path.join(__dirname, `../file/post/${lastedPostId}`), {
         recursive: true,
         force: true,
