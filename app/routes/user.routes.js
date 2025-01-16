@@ -16,38 +16,5 @@ module.exports = function (app) {
     userController.userProfile
   );
 
-  app.get(
-    "/api/driver/profile/:id",
-    [authJwt.verifyToken],
-    userController.driverProfile
-  );
-
-  app.get("/api/users", [authJwt.verifyToken], userController.allUser);
-
-  app.get(
-    "/api/users/drivers",
-    [authJwt.verifyToken],
-    userController.allDrivers
-  );
-  app.get(
-    "/api/users/manager",
-    [authJwt.verifyToken],
-    userController.allManager
-  );
-  app.post(
-    "/api/update_Location_User",
-    //  [authJwt.verifyToken],
-    userController.updateLocationUser
-  );
-  // app.get(
-  //   "/api/test/mod",
-  //   [authJwt.verifyToken, authJwt.isModerator],
-  //   controller.moderatorBoard
-  // );
-
-  // app.get(
-  //   "/api/test/admin",
-  //   [authJwt.verifyToken, authJwt.isAdmin],
-  //   controller.adminBoard
-  // );
+  
 };

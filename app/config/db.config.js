@@ -16,8 +16,8 @@
 module.exports = {
   HOST: "localhost",
   USER: "root",
-  PASSWORD: "1234",
-  DB: "mock",
+  PASSWORD: "Forever#160736",
+  DB: "users",
   PORT: 3306,
   SOCKETPATH: "/var/run/mysqld/mysqld.sock", // ใช้ใน Linux หรือ Mac
 };
