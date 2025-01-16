@@ -164,24 +164,8 @@ exports.postCreatePost = async (req, res) => {
 
     for (let i = 0; i < files.length; i++) {
       let fileName;
-      if (i == 0) {
-        fileName =
-          "unknow" +
-          "." +
-          files[i].originalname.split(".")[
-            files[i].originalname.split(".").length - 1
-          ];
-      } else {
-        fileName =
-          "unknow" +
-          "(" +
-          i +
-          ")" +
-          "." +
-          files[i].originalname.split(".")[
-            files[i].originalname.split(".").length - 1
-          ];
-      }
+
+      fileName = files[i].originalname;
       let filePath = path.join(
         __dirname,
         `../file/post/${lastedPostId}/${fileName}`

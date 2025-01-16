@@ -126,7 +126,7 @@ exports.postCreateComment = async (req, res) => {
                     comment 
                         (idUser, idPost, detail, timeStamp, \`like\`) 
                     VALUES 
-                        (?, ?, ?, ?);`,
+                        (?, ?, ?, ?,?);`,
       [idUser, idPost, detail, new Date(), 0]
     );
 
