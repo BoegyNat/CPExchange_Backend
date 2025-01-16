@@ -136,6 +136,15 @@ CREATE TABLE likecomment (
     FOREIGN KEY (idUser) REFERENCES user(idUser)
 );
 
+-- Create the 'verifycomment' table
+CREATE TABLE verifycomment (
+    idVerifyComment INT PRIMARY KEY AUTO_INCREMENT,
+    idComment INT,
+    idUser INT,
+    FOREIGN KEY (idComment) REFERENCES comment(idComment),
+    FOREIGN KEY (idUser) REFERENCES user(idUser)
+);
+
 -- Create the 'likereply' table
 CREATE TABLE likereply (
     idLikeReply INT PRIMARY KEY AUTO_INCREMENT,
