@@ -2,26 +2,137 @@ const e = require("express");
 const pool = require("../connection.js");
 const fs = require("fs");
 const path = require("path");
+const { url } = require("inspector");
+
+function getAttchment(posts) {
+  let result = [];
+  for (let i = 0; i < posts.length; i++) {
+    let attachment = JSON.parse(posts[i].filePath);
+    let newAttachment = [];
+    for (let j = 0; j < attachment.length; j++) {
+      newAttachment.push({
+        fileName: "unknow(" + j + ")",
+        url: `http://localhost:8080/file/post/${posts[i].idPost}/${attachment[j].path}`,
+      });
+    }
+    result.push({
+      idPost: posts[i].idPost,
+      idUser: posts[i].idUser,
+      topic: posts[i].topic,
+      timeStamp: posts[i].timeStamp,
+      detail: posts[i].detail,
+      anonymous: posts[i].anonymous,
+      hasVerify: posts[i].hasVerify,
+      like: posts[i].like,
+      attachment: newAttachment,
+      idPostStatus: posts[i].idPostStatus,
+    });
+  }
+  return result;
+}
 
 exports.getAllPostByIdUser = async (req, res) => {
   try {
+    const { idUser } = req.params;
+    let result = await pool.query("SELECT * FROM post WHERE idUser = ?", [
+      idUser,
+    ]);
+    result = getAttchment(result);
+    if (result) {
+      res.status(200).send(result);
+    } else {
+      return res.status(404).send({ message: "Don't have post" });
+    }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
 };
 
-exports.getallPost = async (req, res) => {
+exports.getAllPost = async (req, res) => {
   try {
-    let result = await pool.query(
-      "SELECT * FROM post",
-      
-    );
+    let result = await pool.query("SELECT * FROM post");
     return res.status(200).send(result);
-    } catch (error) {
+    result = getAttchment(result);
+  } catch (error) {
     res.status(500).send({ message: error.message });
-    }
+  }
 };
 
+exports.postClickLikePost = async (req, res) => {
+  try {
+    const { idUser, idPost } = req.body;
+    let checkLikePost = await pool.query(
+      `SELECT * FROM likepost WHERE idPost = ? AND idUser = ?`,
+      [idPost, idUser]
+    );
+    let result;
+    if (checkLikePost.length > 0) {
+      let deleteLikePost = await pool.query(
+        `DELETE FROM likepost WHERE idPost = ? AND idUser = ?`,
+        [idPost, idUser]
+      );
+      result = await pool.query(
+        `UPDATE post SET \`like\` = \`like\` - 1 WHERE idPost = ?`,
+        [idPost]
+      );
+    } else {
+      let addLikePost = await pool.query(
+        `INSERT INTO likepost (idPost, idUser ) VALUES (?, ?)`,
+        [idPost, idUser]
+      );
+
+      result = await pool.query(
+        `UPDATE post SET \`like\` = \`like\` + 1 WHERE idPost = ?`,
+        [idPost]
+      );
+    }
+
+    let post = await pool.query(`SELECT * FROM post WHERE idPost = ?`, [
+      idPost,
+    ]);
+
+    if (result) {
+      return res.status(200).send({ message: "Like success", data: post[0] });
+    } else {
+      return res.status(404).send({ message: "Don't have post" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getPostByPriority = async (req, res) => {
+  try {
+    const { idUser } = req.params;
+    let result = await pool.query(
+      `
+ SELECT 
+    p.*, 
+    COALESCE(MAX(utp.priority), 0) AS tagPriority, 
+    COALESCE(MAX(ustp.priority), 0) AS subTagPriority,
+    (COALESCE(MAX(utp.priority), 0) + COALESCE(MAX(ustp.priority), 0)) AS totalPriority
+FROM 
+    post p
+LEFT JOIN posttag pt ON p.idPost = pt.idPost
+LEFT JOIN usertagpriority utp ON pt.idTag = utp.idTag AND utp.idUser = ?
+LEFT JOIN postsubtag pst ON p.idPost = pst.idPost
+LEFT JOIN usersubtagpriority ustp ON pst.idSubTag = ustp.idSubTag AND ustp.idUser = ? 
+GROUP BY p.idPost
+ORDER BY totalPriority DESC, p.timeStamp DESC;
+`,
+      [idUser, idUser]
+    );
+    result = getAttchment(result);
+
+    if (result) {
+      res.status(200).send(result);
+    } else {
+      return res.status(404).send({ message: "Don't have post" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
 
 exports.postCreatePost = async (req, res) => {
   try {
@@ -41,9 +152,7 @@ exports.postCreatePost = async (req, res) => {
       lastedPostId = parseInt(lastedPost[0].idPost) + 1;
     }
 
-    if (
-      fs.existsSync(path.join(__dirname, `../file/post/${lastedPostId}`))
-    ) {
+    if (fs.existsSync(path.join(__dirname, `../file/post/${lastedPostId}`))) {
       fs.rmSync(path.join(__dirname, `../file/post/${lastedPostId}`), {
         recursive: true,
         force: true,
@@ -158,7 +267,7 @@ exports.postCreatePost = async (req, res) => {
         hasVerify: false,
         like: 0,
         filePath: JSON.stringify(attachment),
-        idPostStatus: 0,
+        idPostStatus: 1,
       };
       return res.status(200).send({
         success: true,

@@ -1,5 +1,5 @@
 const { authJwt } = require("../middleware");
-const postController = require("../controllers/post.controller");
+const commentController = require("../controllers/comment.controller");
 const multer = require("multer");
 const upload = multer();
 module.exports = function (app) {
@@ -12,28 +12,20 @@ module.exports = function (app) {
   });
 
   app.get(
-    "/api/get_all_post_by_idUser/:idUser",
+    "/api/get_all_comment_by_idPost/:idPost",
     [authJwt.verifyToken],
-    postController.getAllPostByIdUser
-  );
-
-  app.get("/api/get_all_post", postController.getAllPost);
-
-  app.post(
-    "/api/post_click_like_post",
-    [authJwt.verifyToken],
-    postController.postClickLikePost
-  );
-
-  app.get(
-    "/api/get_post_by_priority/:idUser",
-    [authJwt.verifyToken],
-    postController.getPostByPriority
+    commentController.getAllCommentByIdPost
   );
 
   app.post(
-    "/api/post_create_post",
+    "/api/post_click_like_comment",
+    [authJwt.verifyToken],
+    commentController.postClickLikeComment
+  );
+
+  app.post(
+    "/api/post_create_comment",
     [authJwt.verifyToken, upload.array("attachment")],
-    postController.postCreatePost
+    commentController.postCreateComment
   );
 };

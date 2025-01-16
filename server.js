@@ -24,7 +24,7 @@ app.use(bodyParser.json({ limit: "50mb" }));
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
-app.use("/image", express.static("./app/image"));
+app.use("/file", express.static("./app/file"));
 
 // simple route
 app.get("/", (req, res) => {
@@ -36,6 +36,7 @@ require("./app/routes/auth.routes")(app);
 require("./app/routes/user.routes")(app);
 require("./app/routes/tag.routes")(app);
 require("./app/routes/post.routes")(app);
+require("./app/routes/comment.routes")(app);
 
 // Create an HTTP server and attach the Express app
 const server = http.createServer(app);
