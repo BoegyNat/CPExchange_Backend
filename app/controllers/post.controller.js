@@ -38,6 +38,73 @@ function getAttchment(posts) {
   return result;
 }
 
+async function EditTagPriority(idPost, idUser, priority) {
+  try {
+    let tag = await pool.query(
+      `SELECT post.idPost, posttag.idTag FROM post LEFT JOIN posttag ON post.idPost = posttag.idPost WHERE post.idPost = ?`,
+      [idPost]
+    );
+    let result;
+    if (tag.length == 0) {
+      return;
+    }
+    for (let i = 0; i < tag.length; i++) {
+      let findtag = await pool.query(
+        `SELECT * FROM usertagpriority WHERE idTag = ? AND idUser = ?`,
+        [tag[i].idTag, idUser]
+      );
+      if (findtag.length == 0) {
+        result = await pool.query(
+          `INSERT INTO usertagpriority (idTag, idUser, priority) VALUES (?, ?, ?)`,
+          [tag[i].idTag, idUser, priority]
+        );
+      } else {
+        result = await pool.query(
+          `UPDATE usertagpriority SET priority = priority + ? WHERE idTag = ? AND idUser = ?`,
+          [priority, tag[i].idTag, idUser]
+        );
+      }
+    }
+
+    return;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+async function EditSubTagPriority(idPost, idUser, priority) {
+  try {
+    let subTag = await pool.query(
+      `SELECT post.idPost, postsubtag.idSubTag FROM post LEFT JOIN postsubtag ON post.idPost = postsubtag.idPost WHERE post.idPost = ?`,
+      [idPost]
+    );
+    let result;
+    if (subTag.length == 0) {
+      return;
+    }
+    for (let i = 0; i < subTag.length; i++) {
+      let findsubTag = await pool.query(
+        `SELECT * FROM usersubtagpriority WHERE idSubTag = ? AND idUser = ?`,
+        [subTag[i].idSubTag, idUser]
+      );
+      if (findsubTag.length == 0) {
+        result = await pool.query(
+          `INSERT INTO usersubtagpriority (idSubTag, idUser, priority) VALUES (?, ?, ?)`,
+          [subTag[i].idSubTag, idUser, priority]
+        );
+      } else {
+        result = await pool.query(
+          `UPDATE usersubtagpriority SET priority = priority + ? WHERE idSubTag = ? AND idUser = ?`,
+          [priority, subTag[i].idSubTag, idUser]
+        );
+      }
+    }
+    return;
+  } catch (error) {
+    return;
+  }
+}
+
 exports.getAllPostByIdUser = async (req, res) => {
   try {
     const { idUser } = req.params;
@@ -47,17 +114,22 @@ exports.getAllPostByIdUser = async (req, res) => {
     );
     result = getAttchment(result);
     for (let i = 0; i < result.length; i++) {
-      let tag = await pool.query(
+      const tag = await pool.query(
         "SELECT * FROM tag t LEFT JOIN posttag pt ON t.idTag = pt.idTag WHERE pt.idPost = ?",
         [result[i].idPost]
       );
       result[i].tag = tag;
 
-      let subtag = await pool.query(
+      const subtag = await pool.query(
         "SELECT * FROM subtag s LEFT JOIN postsubtag ps ON s.idSubTag = ps.idSubTag WHERE ps.idPost = ?",
         [result[i].idPost]
       );
       result[i].subtag = subtag;
+      const liked = await pool.query(
+        `SELECT * FROM likepost WHERE idPost = ? AND idUser = ?`,
+        [result[i].idPost, idUser]
+      );
+      result[i].liked = liked.length > 0 ? true : false;
     }
 
     if (result) {
@@ -113,6 +185,8 @@ exports.postClickLikePost = async (req, res) => {
         `UPDATE post SET \`like\` = \`like\` - 1 WHERE idPost = ?`,
         [idPost]
       );
+      EditTagPriority(idPost, idUser, -1);
+      EditSubTagPriority(idPost, idUser, -1);
       like = -1;
     } else {
       let addLikePost = await pool.query(
@@ -124,6 +198,8 @@ exports.postClickLikePost = async (req, res) => {
         `UPDATE post SET \`like\` = \`like\` + 1 WHERE idPost = ?`,
         [idPost]
       );
+      EditTagPriority(idPost, idUser, 1);
+      EditSubTagPriority(idPost, idUser, 1);
       like = 1;
     }
 
@@ -168,17 +244,23 @@ ORDER BY totalPriority DESC, p.timeStamp DESC;
     result = getAttchment(result);
 
     for (let i = 0; i < result.length; i++) {
-      let tag = await pool.query(
+      const tag = await pool.query(
         "SELECT * FROM tag t LEFT JOIN posttag pt ON t.idTag = pt.idTag WHERE pt.idPost = ?",
         [result[i].idPost]
       );
       result[i].tag = tag;
 
-      let subtag = await pool.query(
+      const subtag = await pool.query(
         "SELECT * FROM subtag s LEFT JOIN postsubtag ps ON s.idSubTag = ps.idSubTag WHERE ps.idPost = ?",
         [result[i].idPost]
       );
       result[i].subtag = subtag;
+
+      const liked = await pool.query(
+        `SELECT * FROM likepost WHERE idPost = ? AND idUser = ?`,
+        [result[i].idPost, idUser]
+      );
+      result[i].liked = liked.length > 0 ? true : false;
     }
     if (result) {
       res.status(200).send(result);
