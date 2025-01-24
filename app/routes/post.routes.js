@@ -31,6 +31,12 @@ module.exports = function (app) {
     postController.getPostByPriority
   );
 
+  app.get(
+    "/api/get_post_by_priority_for_submmited_post/:idUser",
+    [authJwt.verifyToken],
+    postController.getPostByPriorityForSubmmitedPost
+  );
+
   app.post(
     "/api/post_create_post",
     [authJwt.verifyToken, upload.array("attachment")],

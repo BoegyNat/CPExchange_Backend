@@ -70,12 +70,12 @@ async function EditSubTagPriority(idPost, idUser, priority) {
     return;
   }
 }
-exports.getAllCommentByIdPost = async (req, res) => {
+exports.getAllReplyByIdComment = async (req, res) => {
   try {
-    const { idPost } = req.params;
+    const { idComment } = req.params;
     let result = await pool.query(
-      `SELECT * FROM comment WHERE idPost = ? ORDER BY isVerify DESC, timeStamp DESC, \`like\` DESC`,
-      [idPost]
+      `SELECT * FROM reply WHERE idComment = ? ORDER BY isVerify DESC, timeStamp DESC, \`like\` DESC`,
+      [idComment]
     );
 
     for (let i = 0; i < result.length; i++) {
@@ -95,60 +95,57 @@ exports.getAllCommentByIdPost = async (req, res) => {
   }
 };
 
-exports.postClickLikeComment = async (req, res) => {
+exports.postClickLikeReply = async (req, res) => {
   try {
-    const { idUser, idComment } = req.body;
+    const { idUser, idReply } = req.body;
 
-    let checkLikeComment = await pool.query(
-      `SELECT * FROM likecomment WHERE idComment = ? AND idUser = ?`,
-      [idComment, idUser]
+    let checkLikeReply = await pool.query(
+      `SELECT * FROM likereply WHERE idReply = ? AND idUser = ?`,
+      [idReply, idUser]
     );
     let result;
     let like = 0;
-    if (checkLikeComment.length > 0) {
-      let deleteLikeComment = await pool.query(
-        `DELETE FROM likecomment WHERE idComment = ? AND idUser = ?`,
-        [idComment, idUser]
+    if (checkLikeReply.length > 0) {
+      let deleteLikeReply = await pool.query(
+        `DELETE FROM likereply WHERE idReply = ? AND idUser = ?`,
+        [idReply, idUser]
       );
       result = await pool.query(
-        `UPDATE comment SET \`like\` = \`like\` - 1 WHERE idComment = ?`,
-        [idComment]
+        `UPDATE reply SET \`like\` = \`like\` - 1 WHERE idReply = ?`,
+        [idReply]
       );
       like = -1;
     } else {
-      let addLikeComment = await pool.query(
-        `INSERT INTO likecomment (idComment, idUser ) VALUES (?, ?)`,
-        [idComment, idUser]
+      let addLikeReply = await pool.query(
+        `INSERT INTO likereply (idReply, idUser ) VALUES (?, ?)`,
+        [idReply, idUser]
       );
 
       result = await pool.query(
-        `UPDATE comment SET \`like\` = \`like\` + 1 WHERE idComment = ?`,
-        [idComment]
+        `UPDATE reply SET \`like\` = \`like\` + 1 WHERE idReply = ?`,
+        [idReply]
       );
       like = 1;
     }
-    let comment = await pool.query(
-      `SELECT * FROM comment WHERE idComment = ?`,
-      [idComment]
-    );
-    EditTagPriority(comment[0].idPost, idUser, like * 2);
-    EditSubTagPriority(comment[0].idPost, idUser, like);
+    let reply = await pool.query(`SELECT * FROM reply WHERE idReply = ?`, [
+      idReply,
+    ]);
+    EditTagPriority(reply[0].idPost, idUser, like * 2);
+    EditSubTagPriority(reply[0].idPost, idUser, like);
 
     if (result) {
-      return res
-        .status(200)
-        .send({ message: "Like success", data: comment[0] });
+      return res.status(200).send({ message: "Like success", data: reply[0] });
     } else {
-      return res.status(404).send({ message: "Don't have comment" });
+      return res.status(404).send({ message: "Don't have reply" });
     }
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
 };
 
-exports.postCreateComment = async (req, res) => {
+exports.postCreateReply = async (req, res) => {
   try {
-    const { idUser, detail, idPost } = req.body;
+    const { idUser, detail, idComment } = req.body;
     // const files = req.files;
 
     // let lastedPost = await pool.query(
@@ -207,25 +204,25 @@ exports.postCreateComment = async (req, res) => {
     const rows = await pool.query(
       `
                     INSERT INTO 
-                    comment 
-                        (idUser, idPost, detail, timeStamp, \`like\`) 
+                    reply 
+                        (idUser, idComment, detail, timeStamp, \`like\`) 
                     VALUES 
                         (?, ?, ?, ?,?);`,
-      [idUser, idPost, detail, new Date(), 0]
+      [idUser, idComment, detail, new Date(), 0]
     );
 
     const user = await pool.query(`SELECT * FROM user WHERE idUser = ?`, [
       idUser,
     ]);
 
-    EditTagPriority(idPost, idUser, 2);
-    EditSubTagPriority(idPost, idUser, 1);
+    EditTagPriority(idComment, idUser, 2);
+    EditSubTagPriority(idComment, idUser, 1);
 
     if (rows) {
-      newComment = {
-        idComment: rows.insertId,
+      newReply = {
+        idReply: rows.insertId,
         profileName: user[0].profileName,
-        idPost: idPost,
+        idComment: idComment,
         idUser: idUser,
         timeStamp: new Date(),
         detail: detail,
@@ -237,60 +234,9 @@ exports.postCreateComment = async (req, res) => {
       };
       return res.status(200).send({
         success: true,
-        data: newComment,
+        data: newReply,
         error: null,
       });
-    }
-  } catch (error) {
-    res.status(500).send({ message: error.message });
-  }
-};
-
-exports.postClickVerifyComment = async (req, res) => {
-  try {
-    const { idComment, idUser } = req.body;
-    let checkVerifyComment = await pool.query(
-      `SELECT * FROM verifycomment WHERE idComment = ? AND idUser = ?`,
-      [idComment, idUser]
-    );
-    let result;
-    if (checkVerifyComment.length > 0) {
-      if (checkVerifyComment[0].idUser == idUser) {
-        let deleteVerifyComment = await pool.query(
-          `DELETE FROM verifycomment WHERE idComment = ? AND idUser = ?`,
-          [idComment, idUser]
-        );
-        result = await pool.query(
-          `UPDATE comment SET isVerify = FALSE  WHERE idComment = ?`,
-          [idComment]
-        );
-      }
-    } else {
-      let addVerifyComment = await pool.query(
-        `INSERT INTO verifycomment (idComment, idUser ) VALUES (?, ?)`,
-        [idComment, idUser]
-      );
-
-      result = await pool.query(
-        `UPDATE comment SET isVerify = TRUE WHERE idComment = ?`,
-        [idComment]
-      );
-
-      let AddHasVerifyPost = await pool.query(
-        `UPDATE post SET hasVerify = TRUE WHERE idPost = (SELECT idPost FROM comment WHERE idComment = ?)`,
-        [idComment]
-      );
-    }
-    let comment = await pool.query(
-      `SELECT * FROM comment WHERE idComment = ?`,
-      [idComment]
-    );
-    if (result) {
-      return res
-        .status(200)
-        .send({ message: "Verify success", data: comment[0] });
-    } else {
-      return res.status(404).send({ message: "Don't have comment" });
     }
   } catch (error) {
     res.status(500).send({ message: error.message });
