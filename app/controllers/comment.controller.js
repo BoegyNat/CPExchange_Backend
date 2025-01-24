@@ -229,6 +229,7 @@ exports.postCreateComment = async (req, res) => {
         idUser: idUser,
         timeStamp: new Date(),
         detail: detail,
+        imagePath: user[0].imagePath,
         anonymouse: false,
         hasVerify: false,
         like: 0,
