@@ -141,6 +141,51 @@ exports.getAllPostByIdUser = async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 };
+exports.getPostByIdPost = async (req, res) => {
+  try {
+    const { idPost } = req.params;
+    let result = await pool.query(
+      "SELECT * FROM post p LEFT JOIN user u ON p.idUser = u.idUser WHERE p.idPost = ?",
+      [idPost]
+    );
+    result = getAttchment(result);
+    for (let i = 0; i < result.length; i++) {
+      let tag = await pool.query(
+        "SELECT * FROM tag t LEFT JOIN posttag pt ON t.idTag = pt.idTag WHERE pt.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].tag = tag;
+
+      let subtag = await pool.query(
+        "SELECT * FROM subtag s LEFT JOIN postsubtag ps ON s.idSubTag = ps.idSubTag WHERE ps.idPost = ?",
+        [result[i].idPost]
+      );
+
+      result[i].subtag = subtag;
+
+      let the_other_subtag = await pool.query(
+        `
+        SELECT * 
+FROM subtag s LEFT JOIN tag t  ON s.idTag = t.idTag 
+WHERE t.idTag = ? AND idSubTag NOT IN (
+    SELECT idSubTag 
+    FROM postsubtag 
+    WHERE idPost = ?
+);
+        `,
+        [result[i].tag[0].idTag, result[i].idPost]
+      );
+      result[i].the_other_subtag = the_other_subtag;
+    }
+    if (result) {
+      res.status(200).send(result[0]);
+    } else {
+      return res.status(404).send({ message: "Post Not found." });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
 
 exports.getAllPost = async (req, res) => {
   try {

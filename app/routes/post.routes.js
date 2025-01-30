@@ -17,6 +17,12 @@ module.exports = function (app) {
     postController.getAllPostByIdUser
   );
 
+  app.get(
+    "/api/get_post_by_idPost/:idPost",
+    [authJwt.verifyToken],
+    postController.getPostByIdPost
+  );
+
   app.get("/api/get_all_post", postController.getAllPost);
 
   app.post(
