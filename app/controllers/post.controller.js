@@ -510,3 +510,147 @@ exports.postCreatePost = async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 };
+
+exports.postEditPost = async (req, res) => {
+  try {
+    // Extract values from req.body and parse JSON strings
+    const { idUser, idPost, topic, detail } = req.body;
+    const subject = JSON.parse(req.body.subject);
+    const categories = JSON.parse(req.body.categories);
+    const attachment_old = JSON.parse(req.body.attachment_old);
+    const files = req.files; // New attachments
+
+    // Define the folder path for this post's attachments
+    const postDir = path.join(__dirname, `../file/post/${idPost}`);
+
+    // Ensure the post directory exists (create if needed)
+    if (!fs.existsSync(postDir)) {
+      fs.mkdirSync(postDir, { recursive: true });
+    }
+
+    let attachment = [];
+
+    // Process the old attachments:
+    // • If the client indicates an attachment is deleted, remove it from disk.
+    // • Otherwise, keep its reference.
+    for (let i = 0; i < attachment_old.length; i++) {
+      const oldAtt = attachment_old[i];
+      if (oldAtt.isDeleted) {
+        // Remove the file if it exists
+        const filePath = path.join(postDir, oldAtt.fileName);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } else {
+        // Keep the attachment by adding its relative path
+        attachment.push({
+          path: `${idPost}/${oldAtt.fileName}`,
+        });
+      }
+    }
+
+    // Process any new attachments coming in req.files:
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        const fileName = files[i].originalname;
+        const filePath = path.join(postDir, fileName);
+        // Write the new file to the disk
+        fs.writeFileSync(filePath, files[i].buffer);
+        // Add its path to the attachment list
+        attachment.push({
+          path: `${idPost}/${fileName}`,
+        });
+      }
+    }
+
+    // Update the "post" record in the database.
+    // (Here we update topic, detail, timestamp, and the filePath field.)
+    const updateQuery = `
+      UPDATE post 
+      SET topic = ?, detail = ?, timeStamp = ?, filePath = ?
+      WHERE idPost = ?`;
+    const updateValues = [
+      topic,
+      detail,
+      new Date(),
+      JSON.stringify(attachment),
+      idPost,
+    ];
+    const updateResult = await pool.query(updateQuery, updateValues);
+
+    // Update tag relationships.
+    // First, remove any existing relations for this post.
+    await pool.query("DELETE FROM posttag WHERE idpost = ?", [idPost]);
+    await pool.query("DELETE FROM postsubtag WHERE idpost = ?", [idPost]);
+
+    // Now, insert new tag/subtag records based on the request data.
+    if (subject.idTag == null) {
+      // No tag id provided so we create a new tag.
+      const addTagResult = await pool.query(
+        `INSERT INTO tag (tagName) VALUES (?)`,
+        [subject.tagName]
+      );
+      const newTagId = addTagResult.insertId;
+      await pool.query(`INSERT INTO posttag (idtag, idpost) VALUES (?, ?)`, [
+        newTagId,
+        idPost,
+      ]);
+      // Insert each category as a subtag
+      for (let i = 0; i < categories.length; i++) {
+        const addSubTagResult = await pool.query(
+          `INSERT INTO subtag (idTag, subTagName) VALUES (?, ?)`,
+          [newTagId, categories[i].subTagName]
+        );
+        await pool.query(
+          `INSERT INTO postsubtag (idsubtag, idpost) VALUES (?, ?)`,
+          [addSubTagResult.insertId, idPost]
+        );
+      }
+    } else {
+      // Use the provided tag id.
+      await pool.query(`INSERT INTO posttag (idtag, idpost) VALUES (?, ?)`, [
+        subject.idTag,
+        idPost,
+      ]);
+      for (let i = 0; i < categories.length; i++) {
+        if (categories[i].idSubTag == null) {
+          const addSubTagResult = await pool.query(
+            `INSERT INTO subtag (idTag, subTagName) VALUES (?, ?)`,
+            [subject.idTag, categories[i].subTagName]
+          );
+          await pool.query(
+            `INSERT INTO postsubtag (idsubtag, idpost) VALUES (?, ?)`,
+            [addSubTagResult.insertId, idPost]
+          );
+        } else {
+          await pool.query(
+            `INSERT INTO postsubtag (idsubtag, idpost) VALUES (?, ?)`,
+            [categories[i].idSubTag, idPost]
+          );
+        }
+      }
+    }
+
+    // If the update was successful, respond with the updated post details.
+    const updatedPost = {
+      idPost,
+      idUser,
+      topic,
+      timeStamp: new Date(),
+      detail,
+      anonymous: false,
+      hasVerify: false,
+      like: 0,
+      filePath: JSON.stringify(attachment),
+      idPostStatus: 1,
+    };
+
+    return res.status(200).send({
+      success: true,
+      data: updatedPost,
+      error: null,
+    });
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};

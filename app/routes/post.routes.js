@@ -48,4 +48,10 @@ module.exports = function (app) {
     [authJwt.verifyToken, upload.array("attachment")],
     postController.postCreatePost
   );
+
+  app.post(
+    "/api/post_edit_post",
+    [authJwt.verifyToken, upload.array("attachment")],
+    postController.postEditPost
+  );
 };
