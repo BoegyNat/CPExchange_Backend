@@ -654,3 +654,78 @@ exports.postEditPost = async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 };
+
+// Delete a post by idPost
+exports.deletePostById = async (req, res) => {
+  try {
+    const { idPost } = req.params;
+
+    // 1. Remove the post's attachment folder from disk (if it exists)
+    const postDir = path.join(__dirname, `../file/post/${idPost}`);
+    if (fs.existsSync(postDir)) {
+      // Remove the directory and all of its contents recursively
+      fs.rmSync(postDir, { recursive: true, force: true });
+    }
+    const post = await pool.query("SELECT * FROM post WHERE idPost = ?", [
+      idPost,
+    ]);
+    // 2. Delete related records from associated tables
+    //    (This step is useful if your database doesn't have ON DELETE CASCADE set up.)
+    const comment = await pool.query("SELECT * FROM comment WHERE idPost = ?", [
+      idPost,
+    ]);
+
+    for (let i = 0; i < comment.length; i++) {
+      const reply = await pool.query(
+        "SELECT * FROM reply WHERE idComment = ?",
+        [comment[i].idComment]
+      );
+      for (let j = 0; j < reply.length; j++) {
+        await pool.query("DELETE FROM likereply WHERE idReply = ?", [
+          reply[j].idReply,
+        ]);
+      }
+      await pool.query("DELETE FROM verifycomment WHERE idComment = ?", [
+        comment[i].idComment,
+      ]);
+      await pool.query("DELETE FROM reply WHERE idComment = ?", [
+        comment[i].idComment,
+      ]);
+      await pool.query("DELETE FROM likecomment WHERE idComment = ?", [
+        comment[i].idComment,
+      ]);
+    }
+
+    await pool.query("DELETE FROM bookmark WHERE idPost = ?", [idPost]);
+
+    await pool.query("DELETE FROM comment WHERE idPost = ?", [idPost]);
+
+    // Delete associated post tags
+    await pool.query("DELETE FROM posttag WHERE idpost = ?", [idPost]);
+
+    // Delete associated post subtags
+    await pool.query("DELETE FROM postsubtag WHERE idpost = ?", [idPost]);
+
+    // Delete associated likes
+    await pool.query("DELETE FROM likepost WHERE idPost = ?", [idPost]);
+
+    // 3. Delete the post record itself
+    const result = await pool.query("DELETE FROM post WHERE idPost = ?", [
+      idPost,
+    ]);
+
+    EditTagPriority(idPost, post[0].idUser, -5);
+    EditSubTagPriority(idPost, post[0].idUser, -2);
+
+    // Depending on your database library, check if the deletion was successful.
+    // Here we assume that the result has an "affectedRows" property.
+    if (result.affectedRows && result.affectedRows > 0) {
+      return res.status(200).send({ message: "Post deleted successfully." });
+    } else {
+      return res.status(404).send({ message: "Post not found." });
+    }
+  } catch (error) {
+    console.error("Error deleting post:", error);
+    return res.status(500).send({ message: error.message });
+  }
+};

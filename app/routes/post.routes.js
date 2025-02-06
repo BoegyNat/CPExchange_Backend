@@ -49,9 +49,5 @@ module.exports = function (app) {
     postController.postCreatePost
   );
 
-  app.post(
-    "/api/post_edit_post",
-    [authJwt.verifyToken, upload.array("attachment")],
-    postController.postEditPost
-  );
+  app.delete("/api/post_edit_post/:idPost", postController.deletePostById);
 };
