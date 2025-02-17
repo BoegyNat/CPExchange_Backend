@@ -386,6 +386,10 @@ exports.postCreatePost = async (req, res) => {
     const categories = JSON.parse(req.body.categories);
     const files = req.files;
 
+    if (!idUser || !topic || !detail || !subject || !categories) {
+      return res.status(400).send({ message: "Missing parameters" });
+    }
+
     let lastedPost = await pool.query(
       "SELECT * FROM post  ORDER BY idPost DESC LIMIT 1"
     );
@@ -448,7 +452,7 @@ exports.postCreatePost = async (req, res) => {
         subject.tagName,
       ]);
       const AddPostTag = await pool.query(
-        `INSERT INTO posttag (idtag, idpost) VALUES (?, ?)`,
+        `INSERT INTO posttag (idTag, idPost) VALUES (?, ?)`,
         [AddTag.insertId, lastedPostId]
       );
       for (let i = 0; i < categories.length; i++) {
@@ -457,13 +461,13 @@ exports.postCreatePost = async (req, res) => {
           [AddTag.insertId, categories[i].subTagName]
         );
         const AddPostSubTag = await pool.query(
-          `INSERT INTO postsubtag (idsubtag, idpost) VALUES (?, ?)`,
+          `INSERT INTO postsubtag (idSubTag, idPost) VALUES (?, ?)`,
           [AddSubTag.insertId, lastedPostId]
         );
       }
     } else {
       const AddTag = await pool.query(
-        `INSERT INTO posttag (idtag, idpost) VALUES (?, ?)`,
+        `INSERT INTO posttag (idTag, idPost) VALUES (?, ?)`,
         [subject.idTag, lastedPostId]
       );
       for (let i = 0; i < categories.length; i++) {
@@ -473,12 +477,12 @@ exports.postCreatePost = async (req, res) => {
             [subject.idTag, categories[i].subTagName]
           );
           const AddPostSubTag = await pool.query(
-            `INSERT INTO postsubtag (idsubtag, idpost) VALUES (?, ?)`,
+            `INSERT INTO postsubtag (idSubTag, idPost) VALUES (?, ?)`,
             [AddSubTag.insertId, lastedPostId]
           );
         } else {
           const AddSubTag = await pool.query(
-            `INSERT INTO postsubtag (idsubtag, idpost) VALUES (?, ?)`,
+            `INSERT INTO postsubtag (idSubTag, idPost) VALUES (?, ?)`,
             [categories[i].idSubTag, lastedPostId]
           );
         }

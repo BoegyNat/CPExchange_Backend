@@ -4,6 +4,34 @@ const fs = require("fs");
 const path = require("path");
 const { profile } = require("console");
 
+function getAttchmentComments(comments) {
+  let result = [];
+  for (let i = 0; i < comments.length; i++) {
+    let attachment = JSON.parse(comments[i].filePath);
+    let newAttachment = [];
+    for (let j = 0; j < attachment.length; j++) {
+      newAttachment.push({
+        fileName: attachment[j].path.split("/")[1],
+        url: `http://localhost:8080/file/comment/${attachment[j].path}`,
+      });
+    }
+    result.push({
+      idComment: comments[i].idComment,
+      idUser: comments[i].idUser,
+      detail: comments[i].detail,
+      timeStamp: comments[i].timeStamp,
+      anonymous: comments[i].anonymous,
+      isVerify: comments[i].isVerify,
+      like: comments[i].like,
+      attachment: newAttachment,
+      idPost: comments[i].idPost,
+      profileName: comments[i].profileName,
+      imagePath: comments[i].imagePath,
+    });
+  }
+  return result;
+}
+
 async function EditTagPriority(idPost, idUser, priority) {
   try {
     let tag = await pool.query(
@@ -70,6 +98,7 @@ async function EditSubTagPriority(idPost, idUser, priority) {
     return;
   }
 }
+
 exports.getAllCommentByIdPost = async (req, res) => {
   try {
     const { idPost } = req.params;
@@ -85,6 +114,9 @@ exports.getAllCommentByIdPost = async (req, res) => {
       result[i].profileName = user[0].profileName;
       result[i].imagePath = user[0].imagePath;
     }
+
+    result = getAttchmentComments(result);
+
     if (result) {
       return res.status(200).send(result);
     } else {
@@ -149,69 +181,55 @@ exports.postClickLikeComment = async (req, res) => {
 exports.postCreateComment = async (req, res) => {
   try {
     const { idUser, detail, idPost } = req.body;
-    // const files = req.files;
+    const files = req.files;
 
-    // let lastedPost = await pool.query(
-    //   "SELECT * FROM post  ORDER BY idPost DESC LIMIT 1"
-    // );
-    // let lastedPostId = 0;
+    let lastedComment = await pool.query(
+      "SELECT * FROM comment  ORDER BY idComment DESC LIMIT 1"
+    );
+    let lastedCommentId = 0;
 
-    // if (lastedPost.length == 0) {
-    //   lastedPostId = lastedPostId + 1;
-    // } else {
-    //   lastedPostId = parseInt(lastedPost[0].idPost) + 1;
-    // }
+    if (lastedComment.length == 0) {
+      lastedCommentId = lastedCommentId + 1;
+    } else {
+      lastedCommentId = parseInt(lastedComment[0].idComment) + 1;
+    }
 
-    // if (fs.existsSync(path.join(__dirname, `../file/post/${lastedPostId}`))) {
-    //   fs.rmSync(path.join(__dirname, `../file/post/${lastedPostId}`), {
-    //     recursive: true,
-    //     force: true,
-    //   });
-    // }
-    // fs.mkdirSync(path.join(__dirname, `../file/post/${lastedPostId}`));
+    if (
+      fs.existsSync(path.join(__dirname, `../file/comment/${lastedCommentId}`))
+    ) {
+      fs.rmSync(path.join(__dirname, `../file/comment/${lastedCommentId}`), {
+        recursive: true,
+        force: true,
+      });
+    }
+    fs.mkdirSync(path.join(__dirname, `../file/comment/${lastedCommentId}`));
 
-    // const attachment = [];
+    const attachment = [];
 
-    // for (let i = 0; i < files.length; i++) {
-    //   let fileName;
-    //   if (i == 0) {
-    //     fileName =
-    //       "unknow" +
-    //       "." +
-    //       files[i].originalname.split(".")[
-    //         files[i].originalname.split(".").length - 1
-    //       ];
-    //   } else {
-    //     fileName =
-    //       "unknow" +
-    //       "(" +
-    //       i +
-    //       ")" +
-    //       "." +
-    //       files[i].originalname.split(".")[
-    //         files[i].originalname.split(".").length - 1
-    //       ];
-    //   }
-    //   let filePath = path.join(
-    //     __dirname,
-    //     `../file/post/${lastedPostId}/${fileName}`
-    //   );
-    //   fs.writeFileSync(filePath, files[i].buffer);
+    for (let i = 0; i < files.length; i++) {
+      let fileName;
 
-    //   attachment.push({
-    //     // fileName: files[i].originalname,
-    //     path: `${lastedPostId}/${fileName}`,
-    //   });
-    // }
+      fileName = files[i].originalname;
+      let filePath = path.join(
+        __dirname,
+        `../file/comment/${lastedCommentId}/${fileName}`
+      );
+      fs.writeFileSync(filePath, files[i].buffer);
+
+      attachment.push({
+        // fileName: files[i].originalname,
+        path: `${lastedCommentId}/${fileName}`,
+      });
+    }
 
     const rows = await pool.query(
       `
                     INSERT INTO 
                     comment 
-                        (idUser, idPost, detail, timeStamp, \`like\`) 
+                        (idUser, idPost, detail, timeStamp, \`like\`, filePath) 
                     VALUES 
-                        (?, ?, ?, ?,?);`,
-      [idUser, idPost, detail, new Date(), 0]
+                        (?, ?, ?, ?,?,?);`,
+      [idUser, idPost, detail, new Date(), 0, JSON.stringify(attachment)]
     );
 
     const user = await pool.query(`SELECT * FROM user WHERE idUser = ?`, [
@@ -233,7 +251,7 @@ exports.postCreateComment = async (req, res) => {
         anonymouse: false,
         hasVerify: false,
         like: 0,
-        // filePath: JSON.stringify(attachment),
+        filePath: JSON.stringify(attachment),
         idPostStatus: 1,
       };
       return res.status(200).send({
