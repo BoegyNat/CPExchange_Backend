@@ -97,6 +97,7 @@ CREATE TABLE comment (
     detail TEXT,
     `like` INT DEFAULT 0,
     isVerify BOOLEAN DEFAULT 0,
+    filePath TEXT,
     idPostStatus INT,
     FOREIGN KEY (idPost) REFERENCES post(idPost),
     FOREIGN KEY (idUser) REFERENCES user(idUser),
@@ -112,6 +113,7 @@ CREATE TABLE reply (
     anonymous BOOLEAN,
     detail TEXT,
     `like` INT DEFAULT 0,
+    filePath TEXT,
     idPostStatus INT,
     FOREIGN KEY (idComment) REFERENCES comment(idComment),
     FOREIGN KEY (idUser) REFERENCES user(idUser),
@@ -244,8 +246,8 @@ INSERT INTO userstatus (StatusName) VALUES
 
 -- Insert mock data for 'user'
 INSERT INTO user (studentCode, firstname_TH, lastname_TH, firstname_EN, lastname_EN, email, profileName, username, password, imagePath, idUserStatus) VALUES
-('640610001', 'สมชาย', 'ใจดี', 'Somchai', 'Jaidee', 'somchai@example.com', 'somchai99', 'somchai99', 'password123', 'image1.jpg', 1),
-('640610002', 'สมศรี', 'ใจงาม', 'Somsri', 'Jaingam', 'somsri@example.com', 'somsri88', 'somsri88', 'password123', 'image2.jpg', 1);
+('640610001', 'สมชาย', 'ใจดี', 'Somchai', 'Jaidee', 'somchai@example.com', 'somchai', '12345678', 'password123', '1.jpg', 1),
+('640610002', 'สมศรี', 'ใจงาม', 'Somsri', 'Jaingam', 'somsri@example.com', 'somsri', '12345678', 'password123', '2.jpg', 1);
 
 -- Insert mock data for 'poststatus'
 INSERT INTO poststatus (PostStatusName) VALUES
