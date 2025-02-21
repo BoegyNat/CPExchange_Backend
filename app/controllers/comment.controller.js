@@ -7,7 +7,7 @@ const { profile } = require("console");
 function getAttchmentComments(comments) {
   let result = [];
   for (let i = 0; i < comments.length; i++) {
-    let attachment = JSON.parse(comments[i].filePath);
+    let attachment = JSON.parse(comments[i].filePath) ?? [];
     let newAttachment = [];
     for (let j = 0; j < attachment.length; j++) {
       newAttachment.push({
@@ -239,6 +239,13 @@ exports.postCreateComment = async (req, res) => {
     EditTagPriority(idPost, idUser, 2);
     EditSubTagPriority(idPost, idUser, 1);
 
+    let newComment = await pool.query(
+      `SELECT * FROM comment WHERE idComment = ?`,
+      [rows.insertId]
+    );
+
+    newComment = getAttchmentComments(newComment);
+
     if (rows) {
       newComment = {
         idComment: rows.insertId,
@@ -249,6 +256,7 @@ exports.postCreateComment = async (req, res) => {
         detail: detail,
         imagePath: user[0].imagePath,
         anonymouse: false,
+        attachment: newComment[0].attachment,
         hasVerify: false,
         like: 0,
         filePath: JSON.stringify(attachment),
@@ -308,6 +316,63 @@ exports.postClickVerifyComment = async (req, res) => {
       return res
         .status(200)
         .send({ message: "Verify success", data: comment[0] });
+    } else {
+      return res.status(404).send({ message: "Don't have comment" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.deleteComment = async (req, res) => {
+  try {
+    const { idComment } = req.params;
+    // 1. Remove the post's attachment folder from disk (if it exists)
+    const commentDir = path.join(__dirname, `../file/comment/${idComment}`);
+    if (fs.existsSync(commentDir)) {
+      // Remove the directory and all of its contents recursively
+      fs.rmSync(commentDir, { recursive: true, force: true });
+    }
+
+    const deleteLikeComment = await pool.query(
+      `DELETE FROM likecomment WHERE idComment = ?`,
+      [idComment]
+    );
+
+    const reply = await pool.query(`SELECT * FROM reply WHERE idComment = ?`, [
+      idComment,
+    ]);
+    if (reply.length > 0) {
+      for (let i = 0; i < reply.length; i++) {
+        const replyDir = path.join(
+          __dirname,
+          `../file/reply/${reply[i].idReply}`
+        );
+        if (fs.existsSync(replyDir)) {
+          // Remove the directory and all of its contents recursively
+          fs.rmSync(replyDir, { recursive: true, force: true });
+        }
+        const deleteLikeReply = await pool.query(
+          `DELETE FROM likereply WHERE idReply = ?`,
+          [reply[i].idReply]
+        );
+      }
+    }
+    const deleteReply = await pool.query(
+      `DELETE FROM reply WHERE idComment = ?`,
+      [idComment]
+    );
+
+    const deleteVerifyComment = await pool.query(
+      `DELETE FROM verifycomment WHERE idComment = ?`,
+      [idComment]
+    );
+
+    let result = await pool.query(`DELETE FROM comment WHERE idComment = ?`, [
+      idComment,
+    ]);
+    if (result) {
+      return res.status(200).send({ message: "Delete success" });
     } else {
       return res.status(404).send({ message: "Don't have comment" });
     }

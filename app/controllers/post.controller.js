@@ -7,8 +7,9 @@ const { url } = require("inspector");
 function getAttchment(posts) {
   let result = [];
   for (let i = 0; i < posts.length; i++) {
-    let attachment = JSON.parse(posts[i].filePath);
+    let attachment = JSON.parse(posts[i].filePath) ?? [];
     let newAttachment = [];
+
     for (let j = 0; j < attachment.length; j++) {
       newAttachment.push({
         fileName: attachment[j].path.split("/")[1],
@@ -256,6 +257,51 @@ exports.postClickLikePost = async (req, res) => {
       return res
         .status(200)
         .send({ message: "Like success", data: post[0], like: like });
+    } else {
+      return res.status(404).send({ message: "Don't have post" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.postClickBookmarkPost = async (req, res) => {
+  try {
+    const { idUser, idPost } = req.body;
+    let checkBookmarkPost = await pool.query(
+      `SELECT * FROM bookmark WHERE idPost = ? AND idUser = ?`,
+      [idPost, idUser]
+    );
+    let result;
+    let bookmark = 0;
+    if (checkBookmarkPost.length > 0) {
+      result = await pool.query(
+        `DELETE FROM bookmark WHERE idPost = ? AND idUser = ?`,
+        [idPost, idUser]
+      );
+      bookmark = false;
+      EditTagPriority(idPost, idUser, -2);
+      EditSubTagPriority(idPost, idUser, -1);
+    } else {
+      result = await pool.query(
+        `INSERT INTO bookmark (idPost, idUser ) VALUES (?, ?)`,
+        [idPost, idUser]
+      );
+      bookmark = true;
+      EditTagPriority(idPost, idUser, 2);
+      EditSubTagPriority(idPost, idUser, 1);
+    }
+
+    let post = await pool.query(`SELECT * FROM post WHERE idPost = ?`, [
+      idPost,
+    ]);
+
+    if (result) {
+      return res.status(200).send({
+        message: "Bookmark success",
+        data: post[0],
+        bookmark: bookmark,
+      });
     } else {
       return res.status(404).send({ message: "Don't have post" });
     }

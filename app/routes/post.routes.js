@@ -31,6 +31,12 @@ module.exports = function (app) {
     postController.postClickLikePost
   );
 
+  app.post(
+    "/api/post_click_bookmark_post",
+    [authJwt.verifyToken],
+    postController.postClickBookmarkPost
+  );
+
   app.get(
     "/api/get_post_by_priority/:idUser",
     [authJwt.verifyToken],

@@ -242,3 +242,28 @@ exports.postCreateReply = async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 };
+
+exports.deleteReplyById = async (req, res) => {
+  try {
+    const { idReply } = req.params;
+    const replyDir = path.join(__dirname, `../file/reply/${idReply}`);
+    if (fs.existsSync(replyDir)) {
+      // Remove the directory and all of its contents recursively
+      fs.rmSync(replyDir, { recursive: true, force: true });
+    }
+    const deleteLikeReply = await pool.query(
+      `DELETE FROM likeReply WHERE idReply = ?`,
+      [idReply]
+    );
+    let result = await pool.query(`DELETE FROM reply WHERE idReply = ?`, [
+      idReply,
+    ]);
+    if (result) {
+      return res.status(200).send({ message: "Delete success" });
+    } else {
+      return res.status(404).send({ message: "Don't have reply" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
