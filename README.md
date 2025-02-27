@@ -134,6 +134,7 @@ CREATE TABLE likecomment (
     idLikeComment INT PRIMARY KEY AUTO_INCREMENT,
     idComment INT,
     idUser INT,
+    isUpVote BOOLEAN,
     FOREIGN KEY (idComment) REFERENCES comment(idComment),
     FOREIGN KEY (idUser) REFERENCES user(idUser)
 );
