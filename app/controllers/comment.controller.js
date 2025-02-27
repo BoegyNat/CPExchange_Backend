@@ -129,43 +129,47 @@ exports.getAllCommentByIdPost = async (req, res) => {
 
 exports.postClickLikeComment = async (req, res) => {
   try {
-    const { idUser, idComment } = req.body;
+    const { idUser, idComment, isUpVote } = req.body;
 
-    let checkLikeComment = await pool.query(
-      `SELECT * FROM likecomment WHERE idComment = ? AND idUser = ?`,
-      [idComment, idUser]
+    const likecomment = await pool.query(
+      "SELECT * FROM likecomment WHERE idUser = ? AND idComment = ?",
+      [idUser, idComment]
     );
-    let result;
-    let like = 0;
-    if (checkLikeComment.length > 0) {
-      let deleteLikeComment = await pool.query(
-        `DELETE FROM likecomment WHERE idComment = ? AND idUser = ?`,
-        [idComment, idUser]
-      );
-      result = await pool.query(
-        `UPDATE comment SET \`like\` = \`like\` - 1 WHERE idComment = ?`,
-        [idComment]
-      );
-      like = -1;
-    } else {
-      let addLikeComment = await pool.query(
-        `INSERT INTO likecomment (idComment, idUser ) VALUES (?, ?)`,
-        [idComment, idUser]
-      );
-
-      result = await pool.query(
-        `UPDATE comment SET \`like\` = \`like\` + 1 WHERE idComment = ?`,
-        [idComment]
-      );
-      like = 1;
+    let changeScore = 0;
+    if (likecomment.length > 0) {
+      if (likecomment[0].isUpVote == true) {
+        changeScore -= 1;
+      } else {
+        changeScore += 1;
+      }
     }
-    let comment = await pool.query(
-      `SELECT * FROM comment WHERE idComment = ?`,
+    const deleteLikeComment = await pool.query(
+      "DELETE FROM likecomment WHERE idUser = ? AND idComment = ?",
+      [idUser, idComment]
+    );
+    if (isUpVote == true) {
+      changeScore += 1;
+    } else {
+      changeScore -= 1;
+    }
+    if (changeScore != 0) {
+      EditTagPriority(comment[0].idPost, idUser, changeScore * 2);
+      EditSubTagPriority(comment[0].idPost, idUser, changeScore);
+      const addLikeComment = await pool.query(
+        "INSERT INTO likecomment (idUser, idComment, isUpVote) VALUES (?, ?, ?)",
+        [idUser, idComment, isUpVote]
+      );
+    }
+
+    const result = await pool.query(
+      "UPDATE comment SET `like` = `like` + ? WHERE idComment = ?",
+      [changeScore, idComment]
+    );
+
+    const comment = await pool.query(
+      "SELECT * FROM comment WHERE idComment = ?",
       [idComment]
     );
-    EditTagPriority(comment[0].idPost, idUser, like * 2);
-    EditSubTagPriority(comment[0].idPost, idUser, like);
-
     if (result) {
       return res
         .status(200)
@@ -291,6 +295,12 @@ exports.postClickVerifyComment = async (req, res) => {
           `UPDATE comment SET isVerify = FALSE  WHERE idComment = ?`,
           [idComment]
         );
+        if (checkVerifyComment.length - 1 == 0) {
+          let AddHasVerifyPost = await pool.query(
+            `UPDATE post SET hasVerify = FALSE WHERE idPost = (SELECT idPost FROM comment WHERE idComment = ?)`,
+            [idComment]
+          );
+        }
       }
     } else {
       let addVerifyComment = await pool.query(

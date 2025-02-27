@@ -74,7 +74,7 @@ exports.getAllReplyByIdComment = async (req, res) => {
   try {
     const { idComment } = req.params;
     let result = await pool.query(
-      `SELECT * FROM reply WHERE idComment = ? ORDER BY isVerify DESC, timeStamp DESC, \`like\` DESC`,
+      `SELECT * FROM reply WHERE idComment = ? ORDER BY  timeStamp DESC, \`like\` DESC`,
       [idComment]
     );
 

@@ -18,6 +18,12 @@ module.exports = function (app) {
   );
 
   app.get(
+    "/api/get_all_post_for_bookmark_by_idUser/:idUser",
+    [authJwt.verifyToken],
+    postController.getAllPostForBookmarkByIdUser
+  );
+
+  app.get(
     "/api/get_post_by_idPost/:idPost",
     [authJwt.verifyToken],
     postController.getPostByIdPost
@@ -55,5 +61,11 @@ module.exports = function (app) {
     postController.postCreatePost
   );
 
-  app.delete("/api/post_edit_post/:idPost", postController.deletePostById);
+  app.post(
+    "/api/post_edit_post",
+    [authJwt.verifyToken, upload.array("attachment")],
+    postController.postEditPost
+  );
+
+  app.delete("/api/post_delete_post/:idPost", postController.deletePostById);
 };
