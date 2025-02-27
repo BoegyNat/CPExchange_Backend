@@ -161,6 +161,7 @@ CREATE TABLE bookmark (
     idBookMark INT PRIMARY KEY AUTO_INCREMENT,
     idUser INT,
     idPost INT,
+    timeStamp DATETIME,
     FOREIGN KEY (idUser) REFERENCES user(idUser),
     FOREIGN KEY (idPost) REFERENCES post(idPost)
 );
@@ -287,8 +288,8 @@ INSERT INTO likereply (idReply, idUser) VALUES
 
 -- Insert mock data for 'bookmark'
 INSERT INTO bookmark (idUser, idPost) VALUES
-(1, 1),
-(2, 2);
+(1, 1, NOW()),
+(2, 2, NOW());
 
 -- Insert mock data for 'tag'
 INSERT INTO tag (tagName) VALUES
