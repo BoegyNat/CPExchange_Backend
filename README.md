@@ -248,9 +248,9 @@ INSERT INTO userstatus (StatusName) VALUES
 ('Banned');
 
 -- Insert mock data for 'user'
-INSERT INTO user (studentCode, firstname_TH, lastname_TH, firstname_EN, lastname_EN, email, profileName, username, password, imagePath, idUserStatus) VALUES
-('640610001', 'สมชาย', 'ใจดี', 'Somchai', 'Jaidee', 'somchai@example.com', 'somchai', '12345678', 'password123', '1.jpg', 1),
-('640610002', 'สมศรี', 'ใจงาม', 'Somsri', 'Jaingam', 'somsri@example.com', 'somsri', '12345678', 'password123', '2.jpg', 1);
+INSERT INTO user (studentCode, firstname_TH, lastname_TH, firstname_EN, lastname_EN, email, profileName, username, password, role, imagePath, idUserStatus) VALUES
+('640610001', 'สมชาย', 'ใจดี', 'Somchai', 'Jaidee', 'somchai@example.com', 'somchai', '12345678', 'password123', 'ROLE_USER', '1.jpg', 1),
+('640610002', 'สมศรี', 'ใจงาม', 'Somsri', 'Jaingam', 'somsri@example.com', 'somsri', '12345678', 'password123', 'ROLE_USER', '2.jpg', 1);
 
 -- Insert mock data for 'poststatus'
 INSERT INTO poststatus (PostStatusName) VALUES
