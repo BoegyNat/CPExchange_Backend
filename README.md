@@ -60,6 +60,7 @@ CREATE TABLE user (
     profileName VARCHAR(255),
     username VARCHAR(255),
     password VARCHAR(255),
+    role VARCHAR(255),
     imagePath VARCHAR(255),
     idUserStatus INT,
     FOREIGN KEY (idUserStatus) REFERENCES userstatus(idUserStatus)
