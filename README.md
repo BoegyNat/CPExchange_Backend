@@ -260,8 +260,8 @@ INSERT INTO poststatus (PostStatusName) VALUES
 
 -- Insert mock data for 'post'
 INSERT INTO post (idUser, topic, timeStamp, detail, anonymous, hasVerify, `like`, filePath, idPostStatus) VALUES
-(1, 'First Post', NOW(), 'This is the first post.', FALSE, TRUE, 10, NULL, 1),
-(2, 'Second Post', NOW(), 'This is another post.', TRUE, FALSE, 5, NULL, 1);
+(1, 'First Post', NOW(), 'This is the first post.', FALSE, TRUE, 1, NULL, 1),
+(2, 'Second Post', NOW(), 'This is another post.', TRUE, FALSE, 1, NULL, 1);
 
 -- Insert mock data for 'comment'
 INSERT INTO comment (idPost, idUser, timeStamp, anonymous, detail, `like`, idPostStatus) VALUES
