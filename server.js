@@ -3,17 +3,31 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const http = require("http"); // Import HTTP to combine with WebSocket
 const WebSocket = require("ws"); // Import WebSocket
+require("dotenv").config();
 
 const app = express();
 
+const origin_url = () => {
+  const listurl = process.env.ORIGIN_URL;
+  if (!listurl) {
+    console.error("You must set the ORIGIN_URL environment variable.");
+    process.exit(1);
+  }
+
+  return listurl.split(",");
+};
+// var corsOptions = {
+//   origin: [
+//     "http://localhost:8081",
+//     "http://localhost:3000",
+//     "http://localhost:3001",
+//     "http://localhost:5172",
+//     "https://uniadmin.co",
+//   ],
+// };
+
 var corsOptions = {
-  origin: [
-    "http://localhost:8081",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:5172",
-    "https://uniadmin.co",
-  ],
+  origin: origin_url(),
 };
 
 app.use(cors(corsOptions));
@@ -24,7 +38,9 @@ app.use(bodyParser.json({ limit: "50mb" }));
 // parse requests of content-type - application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
-app.use("/file", express.static("./app/file"));
+app.use("/api/file", express.static("./app/file"));
+
+app.use("/api/user", express.static("./app/user"));
 
 // simple route
 app.get("/", (req, res) => {

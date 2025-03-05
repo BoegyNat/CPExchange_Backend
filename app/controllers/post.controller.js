@@ -3,6 +3,7 @@ const pool = require("../connection.js");
 const fs = require("fs");
 const path = require("path");
 const { url } = require("inspector");
+require("dotenv").config();
 
 function getAttchment(posts) {
   let result = [];
@@ -13,7 +14,7 @@ function getAttchment(posts) {
     for (let j = 0; j < attachment.length; j++) {
       newAttachment.push({
         fileName: attachment[j].path.split("/")[1],
-        url: `http://localhost:8080/file/post/${attachment[j].path}`,
+        url: `${process.env.API_URL}file/post/${attachment[j].path}`,
       });
     }
     result.push({
@@ -238,9 +239,15 @@ WHERE t.idTag = ? AND idSubTag NOT IN (
 
 exports.getAllPost = async (req, res) => {
   try {
+    const offset = parseInt(req.query.offset) || 0;
+    const limit = parseInt(req.query.limit) || 10;
+
+    // Retrieve posts with pagination
     let result = await pool.query(
-      "SELECT * FROM post p LEFT JOIN user u ON p.idUser = u.idUser ORDER BY timeStamp DESC"
+      "SELECT * FROM post p LEFT JOIN user u ON p.idUser = u.idUser ORDER BY timeStamp DESC LIMIT ? OFFSET ?",
+      [limit, offset]
     );
+
     result = getAttchment(result);
     for (let i = 0; i < result.length; i++) {
       let tag = await pool.query(
@@ -257,6 +264,8 @@ exports.getAllPost = async (req, res) => {
     }
     return res.status(200).send(result);
   } catch (error) {
+    console.log(error);
+
     res.status(500).send({ message: error.message });
   }
 };
@@ -360,31 +369,40 @@ exports.postClickBookmarkPost = async (req, res) => {
 
 exports.getPostByPriorityForSubmmitedPost = async (req, res) => {
   try {
-    const { idUser } = req.params;
+    const { idPost } = req.params;
+    const offset = 0;
+    const limit = 10;
     let result = [];
+
     let lastPost = await pool.query(
-      `SELECT p.*, u.* FROM post p LEFT JOIN user u ON p.idUser = u.idUser WHERE p.idUser = ? ORDER BY p.timeStamp DESC LIMIT 1`,
-      [idUser]
+      `SELECT p.*, u.* FROM post p LEFT JOIN user u ON p.idUser = u.idUser WHERE p.idPost = ? ORDER BY p.timeStamp DESC LIMIT 1`,
+      [idPost]
     );
+
     result.push(lastPost[0]);
+    const idUser = lastPost[0].idUser;
+
     let posts = await pool.query(
       `
  SELECT 
-    p.*,  u.* ,
-    COALESCE(MAX(utp.priority), 0) AS tagPriority, 
-    COALESCE(MAX(ustp.priority), 0) AS subTagPriority,
-    (COALESCE(MAX(utp.priority), 0) + COALESCE(MAX(ustp.priority), 0)) AS totalPriority
-FROM 
-    post p
-LEFT JOIN posttag pt ON p.idPost = pt.idPost
-LEFT JOIN usertagpriority utp ON pt.idTag = utp.idTag AND utp.idUser = ?
-LEFT JOIN postsubtag pst ON p.idPost = pst.idPost
-LEFT JOIN usersubtagpriority ustp ON pst.idSubTag = ustp.idSubTag AND ustp.idUser = ? 
-LEFT JOIN user u ON p.idUser = u.idUser
-GROUP BY p.idPost
-ORDER BY totalPriority DESC, p.timeStamp DESC;
+        p.*, u.*,
+        COALESCE(MAX(utp.priority), 0) AS tagPriority, 
+        COALESCE(MAX(ustp.priority), 0) AS subTagPriority,
+        (COALESCE(MAX(utp.priority), 0) + COALESCE(MAX(ustp.priority), 0)) AS totalPriority
+      FROM 
+        post p
+      LEFT JOIN posttag pt ON p.idPost = pt.idPost
+      LEFT JOIN usertagpriority utp ON pt.idTag = utp.idTag AND utp.idUser = ?
+      LEFT JOIN postsubtag pst ON p.idPost = pst.idPost
+      LEFT JOIN usersubtagpriority ustp ON pst.idSubTag = ustp.idSubTag AND ustp.idUser = ? 
+      LEFT JOIN user u ON p.idUser = u.idUser
+      WHERE p.idPost != ?
+      GROUP BY p.idPost
+      ORDER BY totalPriority DESC, p.timeStamp DESC
+      LIMIT ? OFFSET ?;
+
 `,
-      [idUser, idUser]
+      [idUser, idUser, idPost, limit, offset]
     );
     for (let i = 0; i < posts.length; i++) {
       result.push(posts[i]);
@@ -497,17 +515,31 @@ exports.postCreatePost = async (req, res) => {
       return res.status(400).send({ message: "Missing parameters" });
     }
 
-    let lastedPost = await pool.query(
-      "SELECT * FROM post  ORDER BY idPost DESC LIMIT 1"
+    // let lastedPost = await pool.query(
+    //   "SELECT * FROM post  ORDER BY idPost DESC LIMIT 1"
+    // );
+    // let lastedPostId = 0;
+
+    // if (lastedPost.length == 0) {
+    //   lastedPostId = lastedPostId + 1;
+    // } else {
+    //   lastedPostId = parseInt(lastedPost[0].idPost) + 1;
+    // }
+    const rows = await pool.query(
+      `
+                    INSERT INTO 
+                    post 
+                        (idUser, topic, timeStamp, detail, anonymous, hasVerify,\`like\`,  idPostStatus) 
+                    VALUES 
+                        (?, ?, ?, ?, ?, ?, ?, ?);`,
+      [idUser, topic, new Date(), detail, false, false, 0, 1]
     );
-    let lastedPostId = 0;
 
-    if (lastedPost.length == 0) {
-      lastedPostId = lastedPostId + 1;
-    } else {
-      lastedPostId = parseInt(lastedPost[0].idPost) + 1;
+    const lastedPostId = rows.insertId;
+
+    if (!fs.existsSync(path.join(__dirname, `../file/post`))) {
+      fs.mkdirSync(path.join(__dirname, `../file/post`));
     }
-
     if (fs.existsSync(path.join(__dirname, `../file/post/${lastedPostId}`))) {
       fs.rmSync(path.join(__dirname, `../file/post/${lastedPostId}`), {
         recursive: true,
@@ -534,24 +566,14 @@ exports.postCreatePost = async (req, res) => {
       });
     }
 
-    const rows = await pool.query(
+    const updaterows = await pool.query(
       `
-                    INSERT INTO 
-                    post 
-                        (idUser, topic, timeStamp, detail, anonymous, hasVerify,\`like\`, filePath, idPostStatus) 
-                    VALUES 
-                        (?, ?, ?, ?, ?, ?, ?, ?, ?);`,
-      [
-        idUser,
-        topic,
-        new Date(),
-        detail,
-        false,
-        false,
-        0,
-        JSON.stringify(attachment),
-        1,
-      ]
+                    UPDATE post 
+                    SET 
+                        filePath = ?
+                    WHERE 
+                        idPost = ?;`,
+      [JSON.stringify(attachment), lastedPostId]
     );
 
     if (subject.idTag == null) {
@@ -633,7 +655,9 @@ exports.postEditPost = async (req, res) => {
 
     // Define the folder path for this post's attachments
     const postDir = path.join(__dirname, `../file/post/${idPost}`);
-
+    if (!fs.existsSync(path.join(__dirname, `../file/post`))) {
+      fs.mkdirSync(path.join(__dirname, `../file/post`));
+    }
     // Ensure the post directory exists (create if needed)
     if (!fs.existsSync(postDir)) {
       fs.mkdirSync(postDir, { recursive: true });

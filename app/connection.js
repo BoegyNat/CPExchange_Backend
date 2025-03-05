@@ -1,6 +1,7 @@
 const util = require("util");
 var mysql = require("mysql2");
 const dbConfig = require("./config/db.config.js");
+require("dotenv").config();
 
 var pool = mysql.createPool({
   connectionLimit: 10,
@@ -9,7 +10,7 @@ var pool = mysql.createPool({
   port: dbConfig.PORT,
   password: dbConfig.PASSWORD,
   database: dbConfig.DB,
-  socketPath: process.env.NODE_ENV === "production" ? dbConfig.SOCKETPATH : "",
+  // socketPath: process.env.NODE_ENV === "production" ? dbConfig.SOCKETPATH : "",
 });
 
 pool.getConnection((err, connection) => {

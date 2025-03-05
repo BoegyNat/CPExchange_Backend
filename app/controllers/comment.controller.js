@@ -3,8 +3,8 @@ const pool = require("../connection.js");
 const fs = require("fs");
 const path = require("path");
 const { profile } = require("console");
-
-function getAttchmentComments(comments) {
+require("dotenv").config();
+async function getAttchmentComments(comments) {
   let result = [];
   for (let i = 0; i < comments.length; i++) {
     let attachment = JSON.parse(comments[i].filePath) ?? [];
@@ -12,9 +12,29 @@ function getAttchmentComments(comments) {
     for (let j = 0; j < attachment.length; j++) {
       newAttachment.push({
         fileName: attachment[j].path.split("/")[1],
-        url: `http://localhost:8080/file/comment/${attachment[j].path}`,
+        url: `${process.env.API_URL}file/comment/${attachment[j].path}`,
       });
     }
+
+    const countReply = await pool.query(
+      `SELECT * FROM reply WHERE idComment = ?`,
+      [comments[i].idComment]
+    );
+
+    const countLike = await pool.query(
+      `SELECT * FROM likecomment WHERE idComment = ? AND idUser = ?`,
+      [comments[i].idComment, comments[i].idUser]
+    );
+    isUpVote = false;
+    isDownVote = false;
+    for (let j = 0; j < countLike.length; j++) {
+      if (countLike[j].isUpVote == true) {
+        isUpVote = true;
+      } else {
+        isDownVote = true;
+      }
+    }
+
     result.push({
       idComment: comments[i].idComment,
       idUser: comments[i].idUser,
@@ -27,6 +47,9 @@ function getAttchmentComments(comments) {
       idPost: comments[i].idPost,
       profileName: comments[i].profileName,
       imagePath: comments[i].imagePath,
+      countReply: countReply.length,
+      isUpVote: isUpVote,
+      isDownVote: isDownVote,
     });
   }
   return result;
@@ -103,19 +126,11 @@ exports.getAllCommentByIdPost = async (req, res) => {
   try {
     const { idPost } = req.params;
     let result = await pool.query(
-      `SELECT * FROM comment WHERE idPost = ? ORDER BY isVerify DESC, timeStamp DESC, \`like\` DESC`,
+      `SELECT * FROM comment LEFT JOIN user ON comment.idUser = user.idUser WHERE idPost = ? ORDER BY isVerify DESC, \`like\` DESC, timeStamp DESC`,
       [idPost]
     );
 
-    for (let i = 0; i < result.length; i++) {
-      let user = await pool.query(`SELECT * FROM user WHERE idUser = ?`, [
-        result[i].idUser,
-      ]);
-      result[i].profileName = user[0].profileName;
-      result[i].imagePath = user[0].imagePath;
-    }
-
-    result = getAttchmentComments(result);
+    result = await getAttchmentComments(result);
 
     if (result) {
       return res.status(200).send(result);
@@ -130,29 +145,46 @@ exports.getAllCommentByIdPost = async (req, res) => {
 exports.postClickLikeComment = async (req, res) => {
   try {
     const { idUser, idComment, isUpVote } = req.body;
-
+    const comment = await pool.query(
+      "SELECT * FROM comment WHERE idComment = ?",
+      [idComment]
+    );
     const likecomment = await pool.query(
       "SELECT * FROM likecomment WHERE idUser = ? AND idComment = ?",
       [idUser, idComment]
     );
-    let changeScore = 0;
-    if (likecomment.length > 0) {
-      if (likecomment[0].isUpVote == true) {
-        changeScore -= 1;
-      } else {
-        changeScore += 1;
-      }
-    }
     const deleteLikeComment = await pool.query(
       "DELETE FROM likecomment WHERE idUser = ? AND idComment = ?",
       [idUser, idComment]
     );
-    if (isUpVote == true) {
-      changeScore += 1;
+    let changeScore = 0;
+    let check = 0;
+    if (likecomment.length > 0) {
+      if (likecomment[0].isUpVote == isUpVote) {
+        if (isUpVote == true) {
+          changeScore -= 1;
+        } else {
+          changeScore += 1;
+        }
+      } else {
+        if (isUpVote == true) {
+          changeScore += 2;
+          check = 1;
+        } else {
+          changeScore -= 2;
+          check = -1;
+        }
+      }
     } else {
-      changeScore -= 1;
+      if (isUpVote == true) {
+        changeScore += 1;
+        check = 1;
+      } else {
+        changeScore -= 1;
+        check = -1;
+      }
     }
-    if (changeScore != 0) {
+    if (check != 0) {
       EditTagPriority(comment[0].idPost, idUser, changeScore * 2);
       EditSubTagPriority(comment[0].idPost, idUser, changeScore);
       const addLikeComment = await pool.query(
@@ -166,14 +198,12 @@ exports.postClickLikeComment = async (req, res) => {
       [changeScore, idComment]
     );
 
-    const comment = await pool.query(
-      "SELECT * FROM comment WHERE idComment = ?",
-      [idComment]
-    );
     if (result) {
-      return res
-        .status(200)
-        .send({ message: "Like success", data: comment[0] });
+      return res.status(200).send({
+        message: "Like success",
+        like: comment[0].like + changeScore,
+        changeScore: check,
+      });
     } else {
       return res.status(404).send({ message: "Don't have comment" });
     }
@@ -187,17 +217,21 @@ exports.postCreateComment = async (req, res) => {
     const { idUser, detail, idPost } = req.body;
     const files = req.files;
 
-    let lastedComment = await pool.query(
-      "SELECT * FROM comment  ORDER BY idComment DESC LIMIT 1"
+    const rows = await pool.query(
+      `
+                    INSERT INTO 
+                    comment 
+                        (idUser, idPost, detail, timeStamp, \`like\`) 
+                    VALUES 
+                        (?, ?, ?, ?,?);`,
+      [idUser, idPost, detail, new Date(), 0]
     );
-    let lastedCommentId = 0;
 
-    if (lastedComment.length == 0) {
-      lastedCommentId = lastedCommentId + 1;
-    } else {
-      lastedCommentId = parseInt(lastedComment[0].idComment) + 1;
+    const lastedCommentId = rows.insertId;
+
+    if (!fs.existsSync(path.join(__dirname, `../file/comment`))) {
+      fs.mkdirSync(path.join(__dirname, `../file/comment`));
     }
-
     if (
       fs.existsSync(path.join(__dirname, `../file/comment/${lastedCommentId}`))
     ) {
@@ -226,14 +260,15 @@ exports.postCreateComment = async (req, res) => {
       });
     }
 
-    const rows = await pool.query(
+    const updaterows = await pool.query(
       `
-                    INSERT INTO 
+                    UPDATE 
                     comment 
-                        (idUser, idPost, detail, timeStamp, \`like\`, filePath) 
-                    VALUES 
-                        (?, ?, ?, ?,?,?);`,
-      [idUser, idPost, detail, new Date(), 0, JSON.stringify(attachment)]
+                    SET 
+                        filePath = ?
+                    WHERE 
+                        idComment = ?;`,
+      [JSON.stringify(attachment), lastedCommentId]
     );
 
     const user = await pool.query(`SELECT * FROM user WHERE idUser = ?`, [
@@ -244,11 +279,11 @@ exports.postCreateComment = async (req, res) => {
     EditSubTagPriority(idPost, idUser, 1);
 
     let newComment = await pool.query(
-      `SELECT * FROM comment WHERE idComment = ?`,
+      `SELECT * FROM comment LEFT JOIN user ON comment.idUser = user.idUser WHERE idComment = ? `,
       [rows.insertId]
     );
 
-    newComment = getAttchmentComments(newComment);
+    newComment = await getAttchmentComments(newComment);
 
     if (rows) {
       newComment = {
@@ -261,11 +296,81 @@ exports.postCreateComment = async (req, res) => {
         imagePath: user[0].imagePath,
         anonymouse: false,
         attachment: newComment[0].attachment,
-        hasVerify: false,
+        isVerify: false,
         like: 0,
         filePath: JSON.stringify(attachment),
         idPostStatus: 1,
+        countReply: 0,
       };
+      return res.status(200).send({
+        success: true,
+        data: newComment,
+        error: null,
+      });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.postEditComment = async (req, res) => {
+  try {
+    const { idUser, detail, idPost, idComment } = req.body;
+    const attachment_old = JSON.parse(req.body.attachment_old);
+    const files = req.files;
+
+    const commentDir = path.join(__dirname, `../file/comment/${idComment}`);
+    if (!fs.existsSync(path.join(__dirname, `../file/comment`))) {
+      fs.mkdirSync(path.join(__dirname, `../file/comment`));
+    }
+
+    if (!fs.existsSync(commentDir)) {
+      fs.mkdirSync(commentDir, { recursive: true });
+    }
+
+    let attachment = [];
+    for (let i = 0; i < attachment_old.length; i++) {
+      const oldAtt = attachment_old[i];
+      if (oldAtt.isDeleted) {
+        const filePath = path.join(commentDir, oldAtt.fileName);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } else {
+        attachment.push({
+          path: `${idComment}/${oldAtt.fileName}`,
+        });
+      }
+    }
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        const fileName = files[i].originalname;
+        const filePath = path.join(commentDir, fileName);
+        fs.writeFileSync(filePath, files[i].buffer);
+        attachment.push({
+          path: `${idComment}/${fileName}`,
+        });
+      }
+    }
+
+    const rows = await pool.query(
+      `
+                    UPDATE 
+                    comment 
+                    SET 
+                        detail = ?, timeStamp = ?, filePath = ?
+                    WHERE 
+                        idComment = ?;`,
+      [detail, new Date(), JSON.stringify(attachment), idComment]
+    );
+
+    if (rows) {
+      let newComment = await pool.query(
+        `SELECT * FROM comment LEFT JOIN user ON comment.idUser = user.idUser WHERE idPost = ? ORDER BY isVerify DESC, timeStamp DESC, \`like\` DESC`,
+        [idPost]
+      );
+
+      newComment = await getAttchmentComments(newComment);
       return res.status(200).send({
         success: true,
         data: newComment,
@@ -285,6 +390,7 @@ exports.postClickVerifyComment = async (req, res) => {
       [idComment, idUser]
     );
     let result;
+    let verified = false;
     if (checkVerifyComment.length > 0) {
       if (checkVerifyComment[0].idUser == idUser) {
         let deleteVerifyComment = await pool.query(
@@ -295,12 +401,18 @@ exports.postClickVerifyComment = async (req, res) => {
           `UPDATE comment SET isVerify = FALSE  WHERE idComment = ?`,
           [idComment]
         );
-        if (checkVerifyComment.length - 1 == 0) {
+        const checkPostHasVerify = await pool.query(
+          `SELECT * FROM comment WHERE idPost = (SELECT idPost FROM comment WHERE idComment = ?) AND isVerify = TRUE`,
+          [idComment]
+        );
+
+        if (checkPostHasVerify.length == 0) {
           let AddHasVerifyPost = await pool.query(
             `UPDATE post SET hasVerify = FALSE WHERE idPost = (SELECT idPost FROM comment WHERE idComment = ?)`,
             [idComment]
           );
         }
+        verified = false;
       }
     } else {
       let addVerifyComment = await pool.query(
@@ -317,15 +429,14 @@ exports.postClickVerifyComment = async (req, res) => {
         `UPDATE post SET hasVerify = TRUE WHERE idPost = (SELECT idPost FROM comment WHERE idComment = ?)`,
         [idComment]
       );
+
+      verified = true;
     }
-    let comment = await pool.query(
-      `SELECT * FROM comment WHERE idComment = ?`,
-      [idComment]
-    );
+
     if (result) {
       return res
         .status(200)
-        .send({ message: "Verify success", data: comment[0] });
+        .send({ message: "Verify success", data: verified });
     } else {
       return res.status(404).send({ message: "Don't have comment" });
     }

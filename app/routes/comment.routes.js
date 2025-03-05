@@ -13,7 +13,6 @@ module.exports = function (app) {
 
   app.get(
     "/api/get_all_comment_by_idPost/:idPost",
-    [authJwt.verifyToken],
     commentController.getAllCommentByIdPost
   );
 
@@ -30,8 +29,20 @@ module.exports = function (app) {
   );
 
   app.post(
+    "/api/post_edit_comment",
+    [authJwt.verifyToken, upload.array("attachment")],
+    commentController.postEditComment
+  );
+
+  app.post(
     "/api/post_click_verify_comment",
     [authJwt.verifyToken],
     commentController.postClickVerifyComment
+  );
+
+  app.delete(
+    "/api/delete_comment_by_idComment/:idComment",
+    [authJwt.verifyToken],
+    commentController.deleteComment
   );
 };

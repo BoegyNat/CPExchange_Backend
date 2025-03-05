@@ -50,7 +50,7 @@ module.exports = function (app) {
   );
 
   app.get(
-    "/api/get_post_by_priority_for_submmited_post/:idUser",
+    "/api/get_post_by_priority_for_submmited_post/:idPost",
     [authJwt.verifyToken],
     postController.getPostByPriorityForSubmmitedPost
   );
@@ -67,5 +67,9 @@ module.exports = function (app) {
     postController.postEditPost
   );
 
-  app.delete("/api/post_delete_post/:idPost", postController.deletePostById);
+  app.delete(
+    "/api/post_delete_post/:idPost",
+    [authJwt.verifyToken],
+    postController.deletePostById
+  );
 };

@@ -1,6 +1,8 @@
 // const db = require("../models");
 const e = require("express");
 const config = require("../config/auth.config");
+const math = require("mathjs");
+
 // const Users = db.users;
 
 const pool = require("../connection.js");
@@ -85,11 +87,14 @@ exports.signup = async (req, res) => {
     profileName,
   } = req.body;
 
+  const randomNum = math.floor(math.random() * 21) + 1;
+  const imagePath = randomNum + ".jpg";
+
   await pool
     .query(
       `
-  INSERT INTO user (firstname_TH, lastname_TH, firstname_EN, lastname_EN, email, username, password, role, profileName)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+  INSERT INTO user (firstname_TH, lastname_TH, firstname_EN, lastname_EN, email, username, password, role, profileName, imagePath)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
         `,
       [
         firstname_TH,
@@ -101,6 +106,7 @@ exports.signup = async (req, res) => {
         password,
         "ROLE_USER",
         profileName,
+        imagePath,
       ]
     )
     .then((rows) => {
@@ -125,7 +131,7 @@ exports.signup = async (req, res) => {
               email: email,
               username: username,
               roles: "ROLE_USER",
-              image: "imageName",
+              image: imagePath,
               accessToken: token,
             },
           });

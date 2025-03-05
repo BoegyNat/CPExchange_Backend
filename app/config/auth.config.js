@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 module.exports = {
-  secret: "tpe-secret-key"
+  secret: process.env.JWT_SECRET || "secret",
 };

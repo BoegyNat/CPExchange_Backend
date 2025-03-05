@@ -29,6 +29,18 @@ module.exports = function (app) {
     replyController.postCreateReply
   );
 
+  app.post(
+    "/api/post_edit_reply",
+    [authJwt.verifyToken, upload.array("attachment")],
+    replyController.postEditReply
+  );
+
+  app.delete(
+    "/api/delete_reply_by_idReply/:idReply",
+    [authJwt.verifyToken],
+    replyController.deleteReplyByIdReply
+  );
+
   //   app.post(
   //     "/api/post_click_verify_reply",
   //     [authJwt.verifyToken],
