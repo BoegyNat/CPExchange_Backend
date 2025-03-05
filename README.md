@@ -60,6 +60,7 @@ CREATE TABLE user (
     profileName VARCHAR(255),
     username VARCHAR(255),
     password VARCHAR(255),
+    role VARCHAR(255),
     imagePath VARCHAR(255),
     idUserStatus INT,
     FOREIGN KEY (idUserStatus) REFERENCES userstatus(idUserStatus)
@@ -247,9 +248,9 @@ INSERT INTO userstatus (StatusName) VALUES
 ('Banned');
 
 -- Insert mock data for 'user'
-INSERT INTO user (studentCode, firstname_TH, lastname_TH, firstname_EN, lastname_EN, email, profileName, username, password, imagePath, idUserStatus) VALUES
-('640610001', 'สมชาย', 'ใจดี', 'Somchai', 'Jaidee', 'somchai@example.com', 'somchai', '12345678', 'password123', '1.jpg', 1),
-('640610002', 'สมศรี', 'ใจงาม', 'Somsri', 'Jaingam', 'somsri@example.com', 'somsri', '12345678', 'password123', '2.jpg', 1);
+INSERT INTO user (studentCode, firstname_TH, lastname_TH, firstname_EN, lastname_EN, email, profileName, username, password, role, imagePath, idUserStatus) VALUES
+('640610001', 'สมชาย', 'ใจดี', 'Somchai', 'Jaidee', 'somchai@example.com', 'somchai', 'somchai', '12345678', 'ROLE_USER', '1.jpg', 1),
+('640610002', 'สมศรี', 'ใจงาม', 'Somsri', 'Jaingam', 'somsri@example.com', 'somsri', 'somsri', '12345678', 'ROLE_USER', '2.jpg', 1);
 
 -- Insert mock data for 'poststatus'
 INSERT INTO poststatus (PostStatusName) VALUES
@@ -259,8 +260,8 @@ INSERT INTO poststatus (PostStatusName) VALUES
 
 -- Insert mock data for 'post'
 INSERT INTO post (idUser, topic, timeStamp, detail, anonymous, hasVerify, `like`, filePath, idPostStatus) VALUES
-(1, 'First Post', NOW(), 'This is the first post.', FALSE, TRUE, 10, NULL, 1),
-(2, 'Second Post', NOW(), 'This is another post.', TRUE, FALSE, 5, NULL, 1);
+(1, 'First Post', NOW(), 'This is the first post.', FALSE, TRUE, 1, NULL, 1),
+(2, 'Second Post', NOW(), 'This is another post.', TRUE, FALSE, 1, NULL, 1);
 
 -- Insert mock data for 'comment'
 INSERT INTO comment (idPost, idUser, timeStamp, anonymous, detail, `like`, idPostStatus) VALUES
