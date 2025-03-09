@@ -138,6 +138,12 @@ exports.getAllPostByIdUser = async (req, res) => {
         [result[i].idPost, idUser]
       );
       result[i].bookmark = bookmark.length > 0 ? true : false;
+
+      const countComment = await pool.query(
+        `SELECT COUNT(*) AS count FROM comment WHERE idPost = ?`,
+        [result[i].idPost]
+      );
+      result[i].countComment = countComment[0].count;
     }
 
     if (result) {
@@ -180,6 +186,12 @@ exports.getAllPostForBookmarkByIdUser = async (req, res) => {
         [result[i].idPost, idUser]
       );
       result[i].bookmark = bookmark.length > 0 ? true : false;
+
+      const countComment = await pool.query(
+        `SELECT COUNT(*) AS count FROM comment WHERE idPost = ?`,
+        [result[i].idPost]
+      );
+      result[i].countComment = countComment[0].count;
     }
 
     if (result) {
@@ -226,6 +238,12 @@ WHERE t.idTag = ? AND idSubTag NOT IN (
         [result[i].tag[0].idTag, result[i].idPost]
       );
       result[i].the_other_subtag = the_other_subtag;
+
+      const countComment = await pool.query(
+        `SELECT COUNT(*) AS count FROM comment WHERE idPost = ?`,
+        [result[i].idPost]
+      );
+      result[i].countComment = countComment[0].count;
     }
     if (result) {
       res.status(200).send(result[0]);
@@ -261,6 +279,12 @@ exports.getAllPost = async (req, res) => {
         [result[i].idPost]
       );
       result[i].subtag = subtag;
+
+      const countComment = await pool.query(
+        `SELECT COUNT(*) AS count FROM comment WHERE idPost = ?`,
+        [result[i].idPost]
+      );
+      result[i].countComment = countComment[0].count;
     }
     return res.status(200).send(result);
   } catch (error) {
@@ -432,6 +456,12 @@ exports.getPostByPriorityForSubmmitedPost = async (req, res) => {
         [result[i].idPost, idUser]
       );
       result[i].bookmark = bookmark.length > 0 ? true : false;
+
+      const countComment = await pool.query(
+        `SELECT COUNT(*) AS count FROM comment WHERE idPost = ?`,
+        [result[i].idPost]
+      );
+      result[i].countComment = countComment[0].count;
     }
     if (result) {
       res.status(200).send(result);
@@ -493,6 +523,12 @@ exports.getPostByPriority = async (req, res) => {
         [result[i].idPost, idUser]
       );
       result[i].bookmark = bookmark.length > 0 ? true : false;
+
+      const countComment = await pool.query(
+        `SELECT COUNT(*) AS count FROM comment WHERE idPost = ?`,
+        [result[i].idPost]
+      );
+      result[i].countComment = countComment[0].count;
     }
     if (result) {
       res.status(200).send(result);

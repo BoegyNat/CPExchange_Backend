@@ -2,7 +2,6 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const http = require("http"); // Import HTTP to combine with WebSocket
-const WebSocket = require("ws"); // Import WebSocket
 require("dotenv").config();
 
 const app = express();
