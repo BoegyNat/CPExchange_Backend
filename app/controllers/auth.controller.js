@@ -168,3 +168,39 @@ exports.checkUserName = async (req, res) => {
       .send({ exists: false, type: "success", msg: "Username is ok" });
   }
 };
+
+exports.verifyPassword = async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    let result = await pool.query(
+      `
+      SELECT
+        *
+      FROM
+        user
+      WHERE
+        username = ?
+      `,
+      [username]
+    );
+
+    if (result.length > 0) {
+      const user = result[0];
+      if (user.password === password) {
+        return res
+          .status(200)
+          .send({ valid: true, msg: "Password is correct" });
+      } else {
+        return res
+          .status(200)
+          .send({ valid: false, msg: "Password is incorrect" });
+      }
+    } else {
+      return res.status(404).send({ valid: false, msg: "User not found" });
+    }
+  } catch (error) {
+    console.error("Error verifying password", error);
+    return res.status(500).send({ valid: false, msg: "Internal server error" });
+  }
+};
