@@ -15,5 +15,5 @@ module.exports = function (app) {
 
   app.post("/api/auth/check_username", controller.checkUserName);
 
-  app.post("/api/auth/check_username", controller.verifyPassword);
+  app.post("/api/auth/edit_profileName", controller.editProfileName);
 };

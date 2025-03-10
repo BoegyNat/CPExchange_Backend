@@ -10,6 +10,7 @@ var pool = mysql.createPool({
   port: dbConfig.PORT,
   password: dbConfig.PASSWORD,
   database: dbConfig.DB,
+  connectTimeout: 10000,
   // socketPath: process.env.NODE_ENV === "production" ? dbConfig.SOCKETPATH : "",
 });
 
@@ -29,6 +30,15 @@ pool.getConnection((err, connection) => {
   if (connection) connection.release();
 
   return;
+});
+
+// Check database connection
+pool.query('SELECT 1', (err, results) => {
+  if (err) {
+    console.error('Error connecting to the database:', err);
+  } else {
+    console.log('Database connection successful:', results);
+  }
 });
 
 pool.query = util.promisify(pool.query);

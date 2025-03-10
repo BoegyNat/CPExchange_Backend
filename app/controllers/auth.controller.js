@@ -169,9 +169,9 @@ exports.checkUserName = async (req, res) => {
   }
 };
 
-exports.verifyPassword = async (req, res) => {
-  const { username, password } = req.body;
-
+exports.editProfileName = async (req, res) => {
+  const { idUser, password, profileName } = req.body;
+  console.log(req.body);
   try {
     let result = await pool.query(
       `
@@ -180,17 +180,26 @@ exports.verifyPassword = async (req, res) => {
       FROM
         user
       WHERE
-        username = ?
+        idUser = ?
       `,
-      [username]
+      [idUser]
     );
-
+    const user = result[0];
     if (result.length > 0) {
-      const user = result[0];
       if (user.password === password) {
+        console.log("Before update:", user.profileName);
+        await pool.query(
+          `
+          UPDATE user
+          SET profileName = ?
+          WHERE idUser = ?
+          `,
+          [profileName, idUser]
+        );
+        console.log("After update:", profileName);
         return res
           .status(200)
-          .send({ valid: true, msg: "Password is correct" });
+          .send({ valid: true, msg: "Profile name updated successfully" });
       } else {
         return res
           .status(200)
