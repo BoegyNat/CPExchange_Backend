@@ -206,7 +206,7 @@ exports.editProfile = async (req, res) => {
 
         await pool.query(updateQuery, updateValues);
 
-        console.log("After update:", { profileName, firstname_TH, lastname_TH, firstname_EN, lastname_EN, email, newPassword });
+        console.log("After update:", user);
 
         return res
           .status(200)
