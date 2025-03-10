@@ -13,8 +13,13 @@ module.exports = function (app) {
 
   app.get(
     "/api/get_all_reply_by_idComment/:idComment",
-    [authJwt.verifyToken],
     replyController.getAllReplyByIdComment
+  );
+
+  app.post(
+    "/api/get_all_reply_by_idComment/",
+    [authJwt.verifyToken],
+    replyController.getAllReplyByIdCommentWithIdUser
   );
 
   app.post(

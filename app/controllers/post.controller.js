@@ -203,6 +203,186 @@ exports.getAllPostForBookmarkByIdUser = async (req, res) => {
     res.status(500).send({ message: error.message });
   }
 };
+
+exports.getPostByIdTag = async (req, res) => {
+  try {
+    const { idTag } = req.params;
+    let result = await pool.query(
+      "SELECT * FROM post p LEFT JOIN user u ON p.idUser = u.idUser LEFT JOIN posttag pt ON p.idPost = pt.idPost WHERE pt.idTag = ? ORDER BY timeStamp DESC",
+      [idTag]
+    );
+    result = getAttchment(result);
+    for (let i = 0; i < result.length; i++) {
+      const tag = await pool.query(
+        "SELECT * FROM tag t LEFT JOIN posttag pt ON t.idTag = pt.idTag WHERE pt.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].tag = tag;
+
+      const subtag = await pool.query(
+        "SELECT * FROM subtag s LEFT JOIN postsubtag ps ON s.idSubTag = ps.idSubTag WHERE ps.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].subtag = subtag;
+
+      result[i].liked = false;
+
+      result[i].bookmark = false;
+
+      const countComment = await pool.query(
+        `SELECT COUNT(*) AS count FROM comment WHERE idPost = ?`,
+        [result[i].idPost]
+      );
+      result[i].countComment = countComment[0].count;
+    }
+
+    if (result) {
+      res.status(200).send(result);
+    } else {
+      return res.status(404).send({ message: "Don't have post" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getPostByIdTagWithIdUser = async (req, res) => {
+  try {
+    const { idTag, idUser } = req.body;
+    let result = await pool.query(
+      "SELECT * FROM post p LEFT JOIN user u ON p.idUser = u.idUser LEFT JOIN posttag pt ON p.idPost = pt.idPost WHERE pt.idTag = ? ORDER BY timeStamp DESC",
+      [idTag]
+    );
+    result = getAttchment(result);
+    for (let i = 0; i < result.length; i++) {
+      const tag = await pool.query(
+        "SELECT * FROM tag t LEFT JOIN posttag pt ON t.idTag = pt.idTag WHERE pt.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].tag = tag;
+
+      const subtag = await pool.query(
+        "SELECT * FROM subtag s LEFT JOIN postsubtag ps ON s.idSubTag = ps.idSubTag WHERE ps.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].subtag = subtag;
+      const liked = await pool.query(
+        `SELECT * FROM likepost WHERE idPost = ? AND idUser = ?`,
+        [result[i].idPost, idUser]
+      );
+      result[i].liked = liked.length > 0 ? true : false;
+      const bookmark = await pool.query(
+        `SELECT * FROM bookmark WHERE idPost = ? AND idUser = ?`,
+        [result[i].idPost, idUser]
+      );
+      result[i].bookmark = bookmark.length > 0 ? true : false;
+
+      const countComment = await pool.query(
+        `SELECT COUNT(*) AS count FROM comment WHERE idPost = ?`,
+        [result[i].idPost]
+      );
+      result[i].countComment = countComment[0].count;
+    }
+
+    if (result) {
+      res.status(200).send(result);
+    } else {
+      return res.status(404).send({ message: "Don't have post" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getPostByIdSubTag = async (req, res) => {
+  try {
+    const { idSubTag } = req.params;
+    let result = await pool.query(
+      "SELECT * FROM post p LEFT JOIN user u ON p.idUser = u.idUser LEFT JOIN postsubtag ps ON p.idPost = ps.idPost WHERE ps.idSubTag = ? ORDER BY timeStamp DESC",
+      [idSubTag]
+    );
+    result = getAttchment(result);
+    for (let i = 0; i < result.length; i++) {
+      const tag = await pool.query(
+        "SELECT * FROM tag t LEFT JOIN posttag pt ON t.idTag = pt.idTag WHERE pt.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].tag = tag;
+
+      const subtag = await pool.query(
+        "SELECT * FROM subtag s LEFT JOIN postsubtag ps ON s.idSubTag = ps.idSubTag WHERE ps.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].subtag = subtag;
+
+      result[i].liked = false;
+
+      result[i].bookmark = false;
+
+      const countComment = await pool.query(
+        `SELECT COUNT(*) AS count FROM comment WHERE idPost = ?`,
+        [result[i].idPost]
+      );
+      result[i].countComment = countComment[0].count;
+    }
+
+    if (result) {
+      res.status(200).send(result);
+    } else {
+      return res.status(404).send({ message: "Don't have post" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getPostByIdSubTagWithIdUser = async (req, res) => {
+  try {
+    const { idSubTag, idUser } = req.body;
+    let result = await pool.query(
+      "SELECT * FROM post p LEFT JOIN user u ON p.idUser = u.idUser LEFT JOIN postsubtag ps ON p.idPost = ps.idPost WHERE ps.idSubTag = ? ORDER BY timeStamp DESC",
+      [idSubTag]
+    );
+    result = getAttchment(result);
+    for (let i = 0; i < result.length; i++) {
+      const tag = await pool.query(
+        "SELECT * FROM tag t LEFT JOIN posttag pt ON t.idTag = pt.idTag WHERE pt.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].tag = tag;
+
+      const subtag = await pool.query(
+        "SELECT * FROM subtag s LEFT JOIN postsubtag ps ON s.idSubTag = ps.idSubTag WHERE ps.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].subtag = subtag;
+      const liked = await pool.query(
+        `SELECT * FROM likepost WHERE idPost = ? AND idUser = ?`,
+        [result[i].idPost, idUser]
+      );
+      result[i].liked = liked.length > 0 ? true : false;
+      const bookmark = await pool.query(
+        `SELECT * FROM bookmark WHERE idPost = ? AND idUser = ?`,
+        [result[i].idPost, idUser]
+      );
+      result[i].bookmark = bookmark.length > 0 ? true : false;
+
+      const countComment = await pool.query(
+        `SELECT COUNT(*) AS count FROM comment WHERE idPost = ?`,
+        [result[i].idPost]
+      );
+      result[i].countComment = countComment[0].count;
+    }
+
+    if (result) {
+      res.status(200).send(result);
+    } else {
+      return res.status(404).send({ message: "Don't have post" });
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
 exports.getPostByIdPost = async (req, res) => {
   try {
     const { idPost } = req.params;

@@ -17,6 +17,12 @@ module.exports = function (app) {
   );
 
   app.post(
+    "/api/get_all_comment_by_idPost/",
+    [authJwt.verifyToken],
+    commentController.getAllCommentByIdPostWithIdUser
+  );
+
+  app.post(
     "/api/post_click_like_comment",
     [authJwt.verifyToken],
     commentController.postClickLikeComment

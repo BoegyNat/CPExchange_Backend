@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { profile } = require("console");
 require("dotenv").config();
-async function getAttchmentComments(comments) {
+async function getAttchmentComments(comments, idUser = null) {
   let result = [];
   for (let i = 0; i < comments.length; i++) {
     let attachment = JSON.parse(comments[i].filePath) ?? [];
@@ -21,17 +21,19 @@ async function getAttchmentComments(comments) {
       [comments[i].idComment]
     );
 
-    const countLike = await pool.query(
-      `SELECT * FROM likecomment WHERE idComment = ? AND idUser = ?`,
-      [comments[i].idComment, comments[i].idUser]
-    );
     isUpVote = false;
     isDownVote = false;
-    for (let j = 0; j < countLike.length; j++) {
-      if (countLike[j].isUpVote == true) {
-        isUpVote = true;
-      } else {
-        isDownVote = true;
+    if (idUser != null) {
+      const countLike = await pool.query(
+        `SELECT * FROM likecomment WHERE idComment = ? AND idUser = ?`,
+        [comments[i].idComment, idUser]
+      );
+      for (let j = 0; j < countLike.length; j++) {
+        if (countLike[j].isUpVote == true) {
+          isUpVote = true;
+        } else {
+          isDownVote = true;
+        }
       }
     }
 
@@ -131,6 +133,26 @@ exports.getAllCommentByIdPost = async (req, res) => {
     );
 
     result = await getAttchmentComments(result);
+
+    if (result) {
+      return res.status(200).send(result);
+    } else {
+      return res.status(404).send([]);
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getAllCommentByIdPostWithIdUser = async (req, res) => {
+  try {
+    const { idPost, idUser } = req.body;
+    let result = await pool.query(
+      `SELECT * FROM comment LEFT JOIN user ON comment.idUser = user.idUser WHERE idPost = ? ORDER BY isVerify DESC, \`like\` DESC, timeStamp DESC`,
+      [idPost]
+    );
+
+    result = await getAttchmentComments(result, idUser);
 
     if (result) {
       return res.status(200).send(result);
@@ -283,7 +305,7 @@ exports.postCreateComment = async (req, res) => {
       [rows.insertId]
     );
 
-    newComment = await getAttchmentComments(newComment);
+    newComment = await getAttchmentComments(newComment, idUser);
 
     if (rows) {
       newComment = {
@@ -370,7 +392,7 @@ exports.postEditComment = async (req, res) => {
         [idPost]
       );
 
-      newComment = await getAttchmentComments(newComment);
+      newComment = await getAttchmentComments(newComment, idUser);
       return res.status(200).send({
         success: true,
         data: newComment,

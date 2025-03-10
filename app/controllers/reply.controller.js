@@ -23,6 +23,7 @@ function getAttchmentReply(reply) {
       timeStamp: reply[i].timeStamp,
       anonymous: reply[i].anonymous,
       like: reply[i].like,
+      liked: reply[i].liked,
       attachment: newAttachment,
       profileName: reply[i].profileName,
       imagePath: reply[i].imagePath,
@@ -108,9 +109,37 @@ exports.getAllReplyByIdComment = async (req, res) => {
       let user = await pool.query(`SELECT * FROM user WHERE idUser = ?`, [
         result[i].idUser,
       ]);
+
+      result[i].liked = false;
+      result[i].profileName = user[0].profileName;
+      result[i].imagePath = user[0].imagePath;
+    }
+    result = getAttchmentReply(result);
+    if (result) {
+      return res.status(200).send(result);
+    } else {
+      return res.status(404).send([]);
+    }
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+};
+
+exports.getAllReplyByIdCommentWithIdUser = async (req, res) => {
+  try {
+    const { idComment, idUser } = req.body;
+    let result = await pool.query(
+      `SELECT * FROM reply WHERE idComment = ? ORDER BY  timeStamp DESC, \`like\` DESC`,
+      [idComment]
+    );
+
+    for (let i = 0; i < result.length; i++) {
+      let user = await pool.query(`SELECT * FROM user WHERE idUser = ?`, [
+        result[i].idUser,
+      ]);
       let checkLikeReply = await pool.query(
         `SELECT * FROM likereply WHERE idReply = ? AND idUser = ?`,
-        [result[i].idReply, result[i].idUser]
+        [result[i].idReply, idUser]
       );
       result[i].liked = checkLikeReply.length > 0 ? true : false;
       result[i].profileName = user[0].profileName;

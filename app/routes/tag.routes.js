@@ -10,7 +10,7 @@ module.exports = function (app) {
     next();
   });
 
-  app.get("/api/get_all_tags", [authJwt.verifyToken], tagController.getAllTags);
+  app.get("/api/get_all_tags", tagController.getAllTags);
   app.get(
     "/api/get_all_tags_by_idUser/:idUser",
     [authJwt.verifyToken],

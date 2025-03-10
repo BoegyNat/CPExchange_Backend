@@ -29,6 +29,24 @@ module.exports = function (app) {
     postController.getPostByIdPost
   );
 
+  app.get("/api/get_post_by_idTag/:idTag", postController.getPostByIdTag);
+
+  app.post(
+    "/api/get_post_by_idTag",
+    [authJwt.verifyToken],
+    postController.getPostByIdTagWithIdUser
+  );
+
+  app.get(
+    "/api/get_post_by_idSubTag/:idSubTag",
+    postController.getPostByIdSubTag
+  );
+
+  app.post(
+    "/api/get_post_by_idSubTag",
+    postController.getPostByIdSubTagWithIdUser
+  );
+
   app.get("/api/get_all_post", postController.getAllPost);
 
   app.post(
