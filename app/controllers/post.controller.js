@@ -1093,3 +1093,70 @@ exports.deletePostById = async (req, res) => {
     return res.status(500).send({ message: error.message });
   }
 };
+
+
+exports.searchPosts = async (req, res) => {
+  try {
+    // Get search parameters from request body
+    const { query} = req.body;
+    
+    if (!query) {
+      return res.status(400).send({ message: "Search query is required" });
+    }
+    
+    console.log(`Searching for: "${query}" `);
+    
+    // SQL to search in both topic and detail fields (case-insensitive)
+    let result = await pool.query(
+      "SELECT * FROM post p LEFT JOIN user u ON p.idUser = u.idUser WHERE LOWER(p.topic) LIKE LOWER(?) OR LOWER(p.detail) LIKE LOWER(?) ORDER BY p.timeStamp DESC",
+      [`%${query}%`, `%${query}%`]
+    );
+    
+    // Process the results (similar to your other endpoints)
+    result = getAttchment(result);
+    
+    for (let i = 0; i < result.length; i++) {
+      const tag = await pool.query(
+        "SELECT * FROM tag t LEFT JOIN posttag pt ON t.idTag = pt.idTag WHERE pt.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].tag = tag;
+
+      const subtag = await pool.query(
+        "SELECT * FROM subtag s LEFT JOIN postsubtag ps ON s.idSubTag = ps.idSubTag WHERE ps.idPost = ?",
+        [result[i].idPost]
+      );
+      result[i].subtag = subtag;
+      
+      // Add like and bookmark status if user is logged in
+      if (req.userId) {
+        const liked = await pool.query(
+          `SELECT * FROM likepost WHERE idPost = ? AND idUser = ?`,
+          [result[i].idPost, req.userId]
+        );
+        result[i].liked = liked.length > 0 ? true : false;
+        
+        const bookmark = await pool.query(
+          `SELECT * FROM bookmark WHERE idPost = ? AND idUser = ?`,
+          [result[i].idPost, req.userId]
+        );
+        result[i].bookmark = bookmark.length > 0 ? true : false;
+      } else {
+        result[i].liked = false;
+        result[i].bookmark = false;
+      }
+
+      const countComment = await pool.query(
+        `SELECT COUNT(*) AS count FROM comment WHERE idPost = ?`,
+        [result[i].idPost]
+      );
+      result[i].countComment = countComment[0].count;
+    }
+    
+    console.log(`Search returned ${result.length} results`);
+    return res.status(200).send(result);
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).send({ message: error.message });
+  }
+};

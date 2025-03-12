@@ -90,4 +90,10 @@ module.exports = function (app) {
     [authJwt.verifyToken],
     postController.deletePostById
   );
+
+  app.post("/api/search/", 
+     
+    postController.searchPosts
+  );
 };
+
