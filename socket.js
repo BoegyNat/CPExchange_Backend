@@ -7,7 +7,9 @@ const initializeSocket = (server, origin_url) => {
     cors: {
       origin: origin_url,
     },
+    path: "/api/socket.io",
   });
+  console.log(io.path()); // Should print '/api/socket.io'
 
   io.on("connection", (socket) => {
     console.log("A user connected:", socket.id);

@@ -23,8 +23,8 @@ module.exports = function (app) {
     postController.getAllPostForBookmarkByIdUser
   );
 
-  app.get(
-    "/api/get_post_by_idPost/:idPost",
+  app.post(
+    "/api/get_post_by_idPost",
     [authJwt.verifyToken],
     postController.getPostByIdPost
   );

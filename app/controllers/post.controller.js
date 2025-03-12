@@ -385,7 +385,7 @@ exports.getPostByIdSubTagWithIdUser = async (req, res) => {
 };
 exports.getPostByIdPost = async (req, res) => {
   try {
-    const { idPost } = req.params;
+    const { idPost, idUser } = req.body;
     let result = await pool.query(
       "SELECT * FROM post p LEFT JOIN user u ON p.idUser = u.idUser WHERE p.idPost = ?",
       [idPost]
@@ -424,6 +424,17 @@ WHERE t.idTag = ? AND idSubTag NOT IN (
         [result[i].idPost]
       );
       result[i].countComment = countComment[0].count;
+
+      const liked = await pool.query(
+        `SELECT * FROM likepost WHERE idPost = ? AND idUser = ?`,
+        [idPost, idUser]
+      );
+      result[i].liked = liked.length > 0 ? true : false;
+      const bookmark = await pool.query(
+        `SELECT * FROM bookmark WHERE idPost = ? AND idUser = ?`,
+        [idPost, idUser]
+      );
+      result[i].bookmark = bookmark.length > 0 ? true : false;
     }
     if (result) {
       res.status(200).send(result[0]);

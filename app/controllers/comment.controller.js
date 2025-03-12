@@ -319,13 +319,14 @@ exports.postCreateComment = async (req, res) => {
       const postOwnerId = postOwner[0].idUser;
       const topic = postOwner[0].topic;
       const insertNotification = await pool.query(
-        `INSERT INTO notification (idUser, idSender, detail, idNotificationStatus, idPost, timeStamp) VALUES (?,?, ?, ?, ?, ?)`,
+        `INSERT INTO notification (idUser, idSender, detail, idNotificationStatus, idPost, idComment, timeStamp) VALUES (?,?,?, ?, ?, ?, ?)`,
         [
           postOwnerId,
           idUser,
           `${user[0].profileName} commented on your post. Post's topic :"${topic}"`,
           1,
           idPost,
+          lastedCommentId,
           new Date(),
         ]
       );
@@ -537,6 +538,10 @@ exports.deleteComment = async (req, res) => {
         );
       }
     }
+    const deleteNotification = await pool.query(
+      `DELETE FROM notification WHERE idComment = ?`,
+      [idComment]
+    );
     const deleteReply = await pool.query(
       `DELETE FROM reply WHERE idComment = ?`,
       [idComment]
