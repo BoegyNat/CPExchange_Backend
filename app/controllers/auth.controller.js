@@ -170,8 +170,17 @@ exports.checkUserName = async (req, res) => {
 };
 
 exports.editProfile = async (req, res) => {
-  const { idUser, password, profileName, firstname_TH, lastname_TH, firstname_EN, lastname_EN, email, newPassword } = req.body;
-  console.log(req.body);
+  const {
+    idUser,
+    password,
+    profileName,
+    firstname_TH,
+    lastname_TH,
+    firstname_EN,
+    lastname_EN,
+    email,
+    newPassword,
+  } = req.body;
   try {
     let result = await pool.query(
       `
@@ -187,14 +196,20 @@ exports.editProfile = async (req, res) => {
     const user = result[0];
     if (result.length > 0) {
       if (user.password === password) {
-        console.log("Before update:", user);
-
         // Prepare the update query and values
         let updateQuery = `
           UPDATE user
           SET profileName = ?, firstname_TH = ?, lastname_TH = ?, firstname_EN = ?, lastname_EN = ?, email = ?
         `;
-        let updateValues = [profileName, firstname_TH, lastname_TH, firstname_EN, lastname_EN, email, idUser];
+        let updateValues = [
+          profileName,
+          firstname_TH,
+          lastname_TH,
+          firstname_EN,
+          lastname_EN,
+          email,
+          idUser,
+        ];
 
         // If newPassword is provided, include it in the update
         if (newPassword) {
@@ -205,8 +220,6 @@ exports.editProfile = async (req, res) => {
         updateQuery += ` WHERE idUser = ?`;
 
         await pool.query(updateQuery, updateValues);
-
-        console.log("After update:", user);
 
         return res
           .status(200)

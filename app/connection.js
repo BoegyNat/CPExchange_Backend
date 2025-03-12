@@ -32,15 +32,6 @@ pool.getConnection((err, connection) => {
   return;
 });
 
-// Check database connection
-pool.query('SELECT 1', (err, results) => {
-  if (err) {
-    console.error('Error connecting to the database:', err);
-  } else {
-    console.log('Database connection successful:', results);
-  }
-});
-
 pool.query = util.promisify(pool.query);
 
 module.exports = pool;

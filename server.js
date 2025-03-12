@@ -1,7 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const http = require("http"); // Import HTTP to combine with WebSocket
+const http = require("http");
+const { initializeSocket } = require("./socket.js");
 require("dotenv").config();
 
 const app = express();
@@ -15,15 +16,6 @@ const origin_url = () => {
 
   return listurl.split(",");
 };
-// var corsOptions = {
-//   origin: [
-//     "http://localhost:8081",
-//     "http://localhost:3000",
-//     "http://localhost:3001",
-//     "http://localhost:5172",
-//     "https://uniadmin.co",
-//   ],
-// };
 
 var corsOptions = {
   origin: origin_url(),
@@ -53,9 +45,12 @@ require("./app/routes/tag.routes")(app);
 require("./app/routes/post.routes")(app);
 require("./app/routes/comment.routes")(app);
 require("./app/routes/reply.routes")(app);
+require("./app/routes/notification.routes")(app);
 
 // Create an HTTP server and attach the Express app
 const server = http.createServer(app);
+
+initializeSocket(server, origin_url());
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {

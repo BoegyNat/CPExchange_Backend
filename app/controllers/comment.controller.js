@@ -2,8 +2,11 @@ const e = require("express");
 const pool = require("../connection.js");
 const fs = require("fs");
 const path = require("path");
+const { getIO } = require("../../socket.js");
 const { profile } = require("console");
+
 require("dotenv").config();
+
 async function getAttchmentComments(comments, idUser = null) {
   let result = [];
   for (let i = 0; i < comments.length; i++) {
@@ -306,6 +309,39 @@ exports.postCreateComment = async (req, res) => {
     );
 
     newComment = await getAttchmentComments(newComment, idUser);
+
+    const postOwner = await pool.query(
+      `SELECT idUser, topic FROM post WHERE idPost = ?`,
+      [idPost]
+    );
+
+    if (postOwner.length > 0 && postOwner[0].idUser != idUser) {
+      const postOwnerId = postOwner[0].idUser;
+      const topic = postOwner[0].topic;
+      const insertNotification = await pool.query(
+        `INSERT INTO notification (idUser, idSender, detail, idNotificationStatus, idPost, timeStamp) VALUES (?,?, ?, ?, ?, ?)`,
+        [
+          postOwnerId,
+          idUser,
+          `${user[0].profileName} commented on your post. Post's topic :"${topic}"`,
+          1,
+          idPost,
+          new Date(),
+        ]
+      );
+
+      try {
+        const io = getIO(); // ✅ ใช้ getIO() เพื่อดึง instance ของ io
+        io.emit(`notify_post_${postOwnerId}`, {
+          message: `${user[0].profileName} commented on your post. Post's topic :"${topic}"`,
+          postId: idPost,
+          userId: postOwnerId,
+        });
+        console.log(`✅ ส่งแจ้งเตือนสำเร็จ: notify_post_${postOwnerId}`);
+      } catch (error) {
+        console.error("❌ ไม่สามารถส่งแจ้งเตือนได้:", error.message);
+      }
+    }
 
     if (rows) {
       newComment = {

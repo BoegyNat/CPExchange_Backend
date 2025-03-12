@@ -1047,6 +1047,8 @@ exports.deletePostById = async (req, res) => {
       ]);
     }
 
+    await pool.query("DELETE FROM notification WHERE idPost = ?", [idPost]);
+
     await pool.query("DELETE FROM bookmark WHERE idPost = ?", [idPost]);
 
     await pool.query("DELETE FROM comment WHERE idPost = ?", [idPost]);
