@@ -34,7 +34,14 @@ setInterval(async () => {
 exports.getAllTags = async (req, res) => {
   try {
     let result = await pool.query("SELECT * FROM  tag");
+
     if (result) {
+      for (let i = 0; i < result.length; i++) {
+        let subtag = await pool.query("SELECT * FROM  subtag WHERE idTag = ?", [
+          result[i].idTag,
+        ]);
+        result[i].subtag = subtag;
+      }
       res.status(200).send(result);
     } else {
       return res.status(404).send({ message: "Don't have tag" });
