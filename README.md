@@ -337,7 +337,7 @@ INSERT INTO notification (detail, idNotificationStatus, idUser, idSender, idPost
 ('somsri commented on your post. Post's topic :"Second Post"', 2, 1, 2, 2, NOW());
 
 
-```
+````
 
 ### 2. Install Independents
 ```
