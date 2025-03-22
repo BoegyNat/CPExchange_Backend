@@ -29,9 +29,12 @@ Integration on same Server/Port:
 ## Project setup
 Follow these steps to set up and run the CPExchange Backend:
 
-### 1. Database setup
+### 1. Set env file
+Copy or rename the .env.example file to .env, and update the environment variables with your project-specific configuration.
 
-#### 1.1 Create table
+### 2. Database setup
+
+#### 2.1 Create table
 ```
 
 -- Create the 'userstatus' table
@@ -237,7 +240,7 @@ CREATE TABLE notification (
 
 ```
 
-#### 1.1 Create table
+#### 2.1 Mock data
 
 ````
 
