@@ -27,19 +27,11 @@ Integration on same Server/Port:
 > [Integrate React with Node.js Express](https://bezkoder.com/integrate-react-express-same-server-port/)
 
 ## Project setup
+Follow these steps to set up and run the CPExchange Backend:
 
-```
-npm install
-```
+### 1. Database setup
 
-### Run
-
-```
-npm start
-```
-
-### Database setup
-
+#### 1.1 Create table
 ```
 
 -- Create the 'userstatus' table
@@ -231,13 +223,21 @@ CREATE TABLE notification (
     idNotification INT PRIMARY KEY AUTO_INCREMENT,
     detail TEXT,
     idNotificationStatus INT,
-    reference VARCHAR(255),
-    FOREIGN KEY (idNotificationStatus) REFERENCES notificationstatus(idNotificationStatus)
+    idUser INT,
+    idSender INT,
+    idPost INT,
+    idComment INT,
+    timeStamp DATETIME,
+    FOREIGN KEY (idNotificationStatus) REFERENCES notificationstatus(idNotificationStatus),
+    FOREIGN KEY (idUser) REFERENCES user(idUser),
+    FOREIGN KEY (idSender) REFERENCES user(idUser),
+    FOREIGN KEY (idPost) REFERENCES post(idPost),
+    FOREIGN KEY (idComment) REFERENCES comment(idComment)
 );
 
 ```
 
-### Mock Data
+#### 1.1 Create table
 
 ````
 
@@ -295,16 +295,16 @@ INSERT INTO bookmark (idUser, idPost) VALUES
 
 -- Insert mock data for 'tag'
 INSERT INTO tag (tagName) VALUES
-('Technology'),
-('Education'),
-('Health');
+('206161'),
+('001101'),
+('207105');
 
 -- Insert mock data for 'subtag'
 INSERT INTO subtag (idTag, subTagName) VALUES
-(1, 'AI'),
-(1, 'Blockchain'),
-(2, 'Online Learning'),
-(3, 'Mental Health');
+(1, 'diff'),
+(1, 'vector'),
+(2, 'grammar'),
+(3, 'mechanics');
 
 -- Insert mock data for 'posttag'
 INSERT INTO posttag (idTag, idPost) VALUES
@@ -332,9 +332,22 @@ INSERT INTO notificationstatus (NotificationStatusName) VALUES
 ('Read');
 
 -- Insert mock data for 'notification'
-INSERT INTO notification (detail, idNotificationStatus, reference) VALUES
-('Your post has been liked.', 1, 'PostID: 1'),
-('Your comment received a reply.', 2, 'CommentID: 1');
+INSERT INTO notification (detail, idNotificationStatus, idUser, idSender, idPost, idComment, timeStamp) VALUES
+('somchai commented on your post. Post's topic :"First Post"', 1, 2, 1, 1, NOW()),
+('somsri commented on your post. Post's topic :"Second Post"', 2, 1, 2, 2, NOW());
 
-```
+
 ````
+
+### 2. Install Independents
+```
+npm install
+```
+
+### 3. Run
+```
+npm start
+```
+
+
+
